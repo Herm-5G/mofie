@@ -1,0 +1,485 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   MOFIE ELEGANT UI — THE DEFINITIVE STYLESHEET
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. THE FLOATING COMPOSER (INPUT BAR) ───────────────────────────── */
+.composer {
+  background: var(--bg-main) !important; /* Blends into the chat background */
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom)) 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important; /* Spaces the icons from the input pill */
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Emoji and Paperclip Buttons (Transparent, perfectly round) */
+.composer #emoji-btn,
+.composer #attach-btn {
+  background: transparent !important;
+  border-radius: 50% !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  fill: var(--text-muted) !important;
+  transition: background 0.2s !important;
+}
+
+.composer #emoji-btn:active,
+.composer #attach-btn:active {
+  background: var(--hover) !important;
+}
+
+/* The Text Input Pill */
+.composer .input-wrap {
+  flex: 1 !important;
+  background: var(--bg-panel) !important; 
+  border-radius: 24px !important; /* Perfect pill shape */
+  border: 1px solid var(--border-light) !important;
+  height: 44px !important;
+  padding: 0 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  transition: border-color 0.2s !important;
+}
+
+.composer .input-wrap:focus-within {
+  border-color: var(--user-accent-1) !important;
+}
+
+.composer input {
+  background: transparent !important;
+  color: var(--text) !important;
+  font-size: 15px !important;
+  border: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+/* The Send/Mic Button */
+.composer .send-btn {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: var(--user-accent-1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.composer .send-btn svg {
+  fill: #FFFFFF !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* ── 2. ELEGANT CHAT BUBBLES ────────────────────────────────────────── */
+.messages {
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important; 
+  background: var(--bg-main) !important;
+}
+
+.bubble {
+  border-radius: 18px !important;
+  padding: 10px 14px !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+  max-width: 85% !important;
+  position: relative !important;
+  border: none !important;
+}
+
+/* My Messages */
+.msg-row.me .bubble {
+  background: var(--bubble-me-bg) !important;
+  color: var(--bubble-me-text) !important;
+  border-bottom-right-radius: 4px !important;
+  margin-left: auto !important;
+}
+
+/* Their Messages */
+.msg-row.them .bubble {
+  background: var(--bg-panel) !important; 
+  color: var(--text) !important;
+  border-bottom-left-radius: 4px !important;
+}
+
+/* Remove ugly old tails */
+.bubble::before, .bubble::after {
+  display: none !important;
+}
+
+/* Time & Read Receipts */
+.msg-meta {
+  font-size: 11px !important;
+  margin-top: 4px !important;
+  color: var(--text-muted) !important;
+  float: right !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+.msg-row.me .msg-meta {
+  color: rgba(255,255,255,0.7) !important;
+}
+[data-theme="light"] .msg-row.me .msg-meta {
+  color: rgba(17,27,33,0.6) !important;
+}
+
+/* ── 3. PREMIUM COMPACT MODALS & POPUP MENUS ────────────────────────── */
+.modal-overlay {
+  backdrop-filter: blur(4px) !important;
+  background: rgba(0,0,0,0.4) !important;
+  z-index: 99999 !important;
+}
+
+.modal {
+  max-width: 320px !important; /* Forces a compact, elegant size */
+  width: 90% !important;
+  padding: 24px 16px 16px 16px !important;
+  border-radius: 24px !important;
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border-light) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.modal h3 {
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  margin-top: 0 !important;
+  margin-bottom: 20px !important;
+  text-align: center !important;
+  color: var(--text) !important;
+}
+
+/* Centered, Clean Inputs */
+.modal input, 
+.modal textarea {
+  background: var(--bg-main) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  font-size: 15px !important;
+  color: var(--text) !important;
+  margin-bottom: 16px !important;
+  text-align: center !important; /* Centers input text */
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.modal input:focus, 
+.modal textarea:focus {
+  border-color: var(--user-accent-1) !important;
+}
+
+/* The Menu Buttons (Perfectly Centered) */
+.modal button {
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 16px !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: var(--text) !important;
+  text-align: center !important; /* 🔥 Centers the text */
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important; /* 🔥 Centers the icon + text */
+  margin-bottom: 4px !important;
+  transition: background 0.15s !important;
+}
+
+.modal button:active, 
+.modal button:hover {
+  background: var(--hover) !important;
+}
+
+/* Specific Button Colors */
+.modal button.btn-primary,
+.modal button[data-act="save"],
+.modal button[data-act="create"] {
+  color: var(--user-accent-1) !important;
+  font-weight: 700 !important;
+}
+
+.modal button.btn-danger,
+.modal button[data-act="delete"],
+.modal button[data-act="delete-all"],
+.modal button[data-act="delete-chat"] {
+  color: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+/* The Cancel/Close Button (Separated at the bottom) */
+.modal button[data-act="cancel"],
+.modal button[data-act="close"] {
+  color: var(--text-muted) !important;
+  margin-top: 12px !important;
+  border-top: 1px solid var(--border-light) !important;
+  border-radius: 0 0 24px 24px !important;
+  padding-bottom: 16px !important;
+}
+
+/* Fix the layout of icons inside menu buttons */
+.modal button svg, 
+.modal button .action-icon {
+  margin-right: 12px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Modal Avatars (Profile Popup) */
+.modal .avatar-wrap {
+  width: 72px !important;
+  height: 72px !important;
+  margin: 0 auto 16px !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.modal .avatar {
+  font-size: 32px !important;
+  background: var(--user-accent-tint) !important;
+  color: var(--user-accent-1) !important;
+}
+
+/* ── 4. ELEGANT PROFILE & SETTINGS ──────────────────────────────────── */
+.clean-profile-header {
+  background: var(--bg-panel) !important;
+  padding: 20px 24px 12px 24px !important;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+.clean-profile-header h2 {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  color: var(--text) !important;
+}
+
+.wa-profile-row {
+  padding: 20px 24px !important;
+  background: var(--bg-panel) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+
+.clean-section-title {
+  color: var(--text-muted) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+  padding: 24px 24px 8px 24px !important;
+  margin: 0 !important;
+  background: var(--bg-panel) !important;
+}
+
+.clean-settings-card {
+  background: var(--bg-panel) !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+.clean-settings-item {
+  background: var(--bg-panel) !important;
+  padding: 16px 24px !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  transition: background 0.2s !important;
+}
+.clean-settings-item:active {
+  background: var(--hover) !important;
+}
+.clean-settings-item:last-child {
+  border-bottom: none !important;
+}
+
+.clean-icon {
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  margin-right: 16px !important;
+}
+.clean-info h4 {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+  margin-bottom: 2px !important;
+}
+.clean-info p {
+  font-size: 13px !important;
+  color: var(--text-muted) !important;
+}
+
+/* ── 5. FLOATING BOTTOM NAV ─────────────────────────────────────────── */
+.bottom-nav {
+  background: var(--bg-panel) !important;
+  border-top: 1px solid var(--border-light) !important;
+  height: 72px !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.03) !important;
+}
+
+.bottom-nav-btn {
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  gap: 4px !important;
+}
+.bottom-nav-btn.active {
+  color: var(--user-accent-1) !important;
+}
+.bottom-nav-btn.active svg {
+  transform: scale(1.1) !important;
+}
+.bottom-nav-btn::after {
+  background: var(--user-accent-1) !important;
+  height: 3px !important;
+  width: 24px !important;
+  border-radius: 4px !important;
+  bottom: 0 !important;
+}
+
+/* ── 6. ELEGANT CHAT LIST & HEADERS ─────────────────────────────────── */
+.header, .chat-header {
+  background: var(--bg-panel) !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
+}
+.chat-header .chat-name {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+}
+.chat-header .chat-status {
+  font-size: 12px !important;
+  color: var(--user-accent-1) !important;
+}
+
+.chat-item {
+  background: var(--bg-panel) !important;
+  padding: 14px 20px !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  border-radius: 0 !important;
+}
+.chat-item:active {
+  background: var(--hover) !important;
+}
+.chat-name {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+}
+.chat-preview {
+  font-size: 14px !important;
+  color: var(--text-muted) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CLEAN CHAT LIST DIVIDERS (NO FULL-WIDTH LINES)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Reset the chat item */
+.chat-item {
+  background: var(--bg-panel) !important;
+  border-bottom: none !important; /* Kills the harsh full-width line */
+  padding: 16px 20px !important;
+  position: relative !important;
+}
+
+/* 2. Create a subtle, indented divider */
+.chat-item::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  left: 76px !important; /* Aligns the line with the text, skipping the avatar */
+  height: 1px !important;
+  background: var(--border-light) !important;
+}
+
+/* 3. Hide the line on the very last chat in the list */
+.chat-item:last-child::after {
+  display: none !important;
+}
+
+/* 4. Remove any borders from the search row and tabs */
+.search-row {
+  border-bottom: none !important;
+}
+.tabs-row {
+  border-bottom: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FIX: SHAKY TABS & CHAT LINES
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Fix the Shaky Tabs */
+.tab-btn {
+  transition: background-color 0.2s ease, color 0.2s ease !important; /* Only fade colors, no size changes */
+  transform: none !important; /* Kill any bouncing effects */
+  box-sizing: border-box !important; /* Prevents layout shift */
+  border: 1.5px solid transparent !important; /* Reserves space for the border */
+}
+
+.tab-btn.active {
+  border-color: var(--user-accent-1) !important;
+  background: var(--user-accent-tint) !important;
+  color: var(--user-accent-1) !important;
+}
+
+/* Hide the scrollbar on the tabs row to stop it from shifting */
+.tabs-row {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.tabs-row::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* 2. Forcefully remove the old lines from chat items */
+.chat-list .chat-item {
+  border-bottom: none !important; 
+  position: relative !important;
+}
+
+/* Draw the new indented line */
+.chat-list .chat-item::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  left: 76px !important; /* Skips the avatar */
+  height: 1px !important;
+  background: var(--border-light) !important;
+  display: block !important;
+}
+
+/* Remove the line from the very last chat in the list */
+.chat-list .chat-item:last-child::after {
+  display: none !important;
+}
