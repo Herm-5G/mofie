@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- Theme Color for Mobile Browsers -->
+    <meta name="theme-color" content="#0b141a">
+    
+    <!-- Primary SEO Meta Tags -->
+    <title>Mofie — Pure, Fast, Convenient</title>
+    <meta name="description" content="Mofie is a fast, private messaging app with disappearing messages, status updates, and crystal-clear end-to-end encryption.">
+    <meta name="author" content="Herman">
+
+    <!-- Open Graph / Google Search / Social Media Link Previews -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://herm-5g.github.io/mofie/">
+    <meta property="og:title" content="Mofie — Pure, Fast, Convenient">
+    <meta property="og:description" content="Mofie is a fast, private messaging app with disappearing messages, status updates, and crystal-clear end-to-end encryption.">
+    <meta property="og:image" content="https://herm-5g.github.io/mofie/logo.jpg">
+    <meta property="og:image:width" content="1080">
+    <meta property="og:image:height" content="1080">
+    <meta property="og:site_name" content="Mofie">
+
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Mofie — Pure, Fast, Convenient">
+    <meta name="twitter:description" content="Mofie is a fast, private messaging app with disappearing messages, status updates, and crystal-clear end-to-end encryption.">
+    <meta name="twitter:image" content="https://herm-5g.github.io/mofie/logo.jpg">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/jpeg" href="/mofie/icon.jpg">
+    <link rel="apple-touch-icon" href="/mofie/logo.jpg">
+    
+    <!-- PWA Manifest (Optional) -->
+    <link rel="manifest" href="/mofie/manifest.json">
+
+    <!-- CSS FILES (Load order matters) -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="premium.css">
+    <link rel="stylesheet" href="elegant.css">
+    <link rel="stylesheet" href="world.css">
+
+    <!-- Structured Data for Google Search Logo -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Mofie",
+      "url": "https://herm-5g.github.io/mofie/",
+      "logo": "https://herm-5g.github.io/mofie/logo.jpg"
+    }
+    </script>
+
+    <!-- Prevents theme flashing (FOUC) before app.js loads -->
+    <script>
+        const savedTheme = localStorage.getItem('mofie-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const defaultAccent = localStorage.getItem('mofie-accent1') || '#00A884';
+        document.documentElement.style.setProperty('--user-accent-1', defaultAccent);
+    </script>
+
+    <!-- Inline Splash Screen Styles -->
+    <style>
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #0b141a; /* Dark background */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            transition: opacity 0.4s ease;
+        }
+        .splash-logo {
+            width: 110px;
+            height: 110px;
+            border-radius: 24px;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 40px rgba(0, 168, 132, 0.4);
+        }
+        .splash-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 168, 132, 0.2);
+            border-top: 4px solid #00A884;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .hide-splash {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen">
+        <img src="/mofie/logo.jpg" alt="Mofie Logo" class="splash-logo">
+        <div class="splash-spinner"></div>
+    </div>
+
+    <!-- MAIN APP CONTAINER (app.js injects everything here) -->
+    <div id="app"></div>
+
+    <!-- MODULE SCRIPTS -->
+    <!-- app.js is the main entry point. patches.js handles translations & DOM tweaks -->
+    <script type="module" src="app.js"></script>
+    <script type="module" src="patches.js"></script>
+
+    <!-- Splash Screen Removal Logic -->
+    <script>
+        // Check every 50ms if the app has rendered, then hide the splash screen
+        const splashCheck = setInterval(() => {
+            const appDiv = document.getElementById('app');
+            // If the app div has children (meaning app.js has rendered the UI)
+            if (appDiv && appDiv.children.length > 0) {
+                clearInterval(splashCheck);
+                const splash = document.getElementById('splash-screen');
+                if (splash) {
+                    splash.classList.add('hide-splash');
+                    setTimeout(() => splash.remove(), 400);
+                }
+            }
+        }, 50);
+
+        // Failsafe: Hide splash after 8 seconds no matter what 
+        // (prevents infinite loading if Firebase network fails)
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            if (splash && !splash.classList.contains('hide-splash')) {
+                splash.classList.add('hide-splash');
+                setTimeout(() => splash.remove(), 400);
+            }
+        }, 8000);
+    </script>
+</body>
+</html>
