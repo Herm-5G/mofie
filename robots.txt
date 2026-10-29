@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://herm-5g.github.io/mofie/sitemap.xml
