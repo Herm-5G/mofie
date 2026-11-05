@@ -1329,3 +1329,54 @@ body {
   height: 12px !important;
   fill: currentColor !important;
 }
+/* ═══════════════════════════════════════════════════════════════════════
+   MOFIE UX UPGRADES v2.1
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Network Status Banner */
+#network-banner {
+  position: fixed; top: -50px; left: 0; right: 0;
+  padding: 8px; text-align: center; font-size: 13px; font-weight: 700;
+  color: #fff; z-index: 999999; transition: top 0.3s ease;
+}
+#network-banner.show { top: 0; }
+#network-banner.offline { background: #ef4444; }
+#network-banner.online { background: #10b981; }
+
+/* 2. Unread Message Divider */
+.unread-divider {
+  display: flex; align-items: center; text-align: center;
+  margin: 16px 0; color: var(--user-accent-1);
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.unread-divider::before, .unread-divider::after {
+  content: ''; flex: 1; border-bottom: 1px solid var(--user-accent-tint);
+}
+.unread-divider span { padding: 0 10px; }
+
+/* 3. Voice Note Speed Control */
+.cvp-speed {
+  background: rgba(0,0,0,0.2); color: #fff; border: none;
+  border-radius: 10px; padding: 2px 6px; font-size: 10px;
+  font-weight: 800; cursor: pointer; margin-left: 6px;
+}
+[data-theme="light"] .cvp-speed { background: rgba(0,0,0,0.1); color: var(--text); }
+.cvp-speed:active { transform: scale(0.9); }
+
+/* 4. PWA Install Banner */
+#pwa-install-banner {
+  position: fixed; bottom: 80px; left: 16px; right: 16px;
+  background: var(--bg-panel); border: 1px solid var(--user-accent-1);
+  border-radius: 16px; padding: 16px; z-index: 99999;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  display: flex; align-items: center; justify-content: space-between;
+  transform: translateY(200%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#pwa-install-banner.show { transform: translateY(0); }
+#pwa-install-banner h4 { margin: 0 0 4px; font-size: 15px; color: var(--text); }
+#pwa-install-banner p { margin: 0; font-size: 12px; color: var(--text-muted); }
+#pwa-install-btn {
+  background: var(--user-accent-1); color: #fff; border: none;
+  padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer;
+}
