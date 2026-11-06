@@ -12,11 +12,6 @@
       "showSpinner": false,
       "splashFullScreen": true,
       "splashImmersive": true
-    },
-    "Contacts": {
-      "ios": {
-        "displayName": "Mofie Contacts"
-      }
     }
   }
 }
