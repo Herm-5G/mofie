@@ -37,7 +37,7 @@ jobs:
       run: |
         npm install --legacy-peer-deps
         # Pinning Capacitor 5 to ensure compatibility with Java 17
-        # 🔴 FIXED: Removed @5 from @capacitor/contacts so it finds the correct version
+        # 🔴 FIXED: Removed @5 from @capacitor/contacts
         npm install --legacy-peer-deps \
           @capacitor/android@5 \
           @capacitor/contacts \
