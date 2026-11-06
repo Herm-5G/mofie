@@ -27,10 +27,11 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v4
 
-    - name: Create www folder and copy web files
+    - name: Create www folder and copy ALL web files
       run: |
         mkdir -p www
-        cp index.html app.js crypto.js *.css manifest.json *.jpg *.xml *.txt *.html www/ 2>/dev/null || true
+        # The *.js is the crucial fix here to grab patches.js and i18n.js
+        cp index.html *.js *.css manifest.json *.jpg *.xml *.txt *.html www/ 2>/dev/null || true
 
     - name: Install dependencies and add Android platform
       run: |
@@ -39,14 +40,17 @@ jobs:
         npm install @capacitor/android @capacitor-community/contacts
         npx cap sync
 
-    - name: Clean up unnecessary files
+    - name: Clean up unnecessary backend files from APK
       run: |
+        # Prevents backend folders from bloating or crashing the Android app
         rm -rf android/app/src/main/assets/public/functions
         rm -rf android/app/src/main/assets/public/.github
+        rm -rf android/app/src/main/assets/public/.git
         rm -rf android/app/src/main/assets/public/node_modules
 
     - name: Add Contact Permission
       run: |
+        # Injects the READ_CONTACTS permission into the Android Manifest
         sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_CONTACTS" />' android/app/src/main/AndroidManifest.xml
 
     - name: Build APK
