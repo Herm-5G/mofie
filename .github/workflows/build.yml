@@ -39,6 +39,15 @@ jobs:
         npm install @capacitor/android @capacitor-community/contacts
         npx cap sync
 
+    # 🟢 NEW: GENERATE CUSTOM APP ICONS 🟢
+    - name: Generate App Icons
+      run: |
+        mkdir -p assets
+        # Copy your existing icon.jpg to the assets folder and rename it to icon.png
+        cp icon.jpg assets/icon.png
+        # Run the official Capacitor tool to generate all Android icon sizes
+        npx @capacitor/assets generate --android
+
     - name: Clean up unnecessary backend files from APK
       run: |
         rm -rf android/app/src/main/assets/public/functions
@@ -57,7 +66,6 @@ jobs:
         chmod +x gradlew
         ./gradlew assembleDebug
 
-    # 🟢 THIS IS THE NEW STEP THAT RENAMES THE FILE 🟢
     - name: Rename APK to Mofie
       run: |
         mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Mofie.apk
