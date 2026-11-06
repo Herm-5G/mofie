@@ -37,9 +37,10 @@ jobs:
       run: |
         npm install --legacy-peer-deps
         # Pinning Capacitor 5 to ensure compatibility with Java 17
+        # 🔴 FIXED: Swapped @capacitor-community/contacts for the official @capacitor/contacts
         npm install --legacy-peer-deps \
           @capacitor/android@5 \
-          @capacitor-community/contacts@5 \
+          @capacitor/contacts@5 \
           @capacitor/camera@5 \
           @capacitor/push-notifications@5 \
           @capacitor/splash-screen@5 \
@@ -95,7 +96,7 @@ jobs:
         rm -rf android/app/src/main/assets/public/.github
         rm -rf android/app/src/main/assets/public/.git
 
-    # --- UPDATED: Injects Contacts, Camera, and Mic Permissions ---
+    # --- Injects Contacts, Camera, and Mic Permissions ---
     - name: Add Required Permissions to AndroidManifest
       run: |
         # Inject permissions right before the <application> tag
@@ -104,7 +105,6 @@ jobs:
         # Verify the permissions were added successfully in the logs
         echo "Verifying permissions in AndroidManifest:"
         grep "uses-permission" android/app/src/main/AndroidManifest.xml
-    # --------------------------------------------------------------
 
     - name: Build APK
       run: |
