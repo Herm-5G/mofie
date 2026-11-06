@@ -30,47 +30,41 @@ jobs:
     - name: Create www folder and copy ALL web files
       run: |
         mkdir -p www
-        # Copy all frontend files
         cp index.html *.js *.css manifest.json *.jpg *.png *.xml *.txt *.html www/ 2>/dev/null || true
 
     - name: Install dependencies and add Android platform
       run: |
-        # --legacy-peer-deps prevents plugin version conflicts
+        # Install Capacitor, Contacts, Push, AND Splash Screen plugins
         npm install --legacy-peer-deps
-        npm install --legacy-peer-deps @capacitor/android @capacitor-community/contacts @capacitor/push-notifications
+        npm install --legacy-peer-deps @capacitor/android @capacitor-community/contacts @capacitor/push-notifications @capacitor/splash-screen
         npx cap add android
         npx cap sync
 
     - name: Generate Transparent App Icons & Splash
       run: |
         mkdir -p assets
-        # Use your icon.png for both the app icon and the splash screen
         cp icon.png assets/icon.png
         cp icon.png assets/splash.png
         cp icon.png assets/splash-dark.png
-        # Generate icons with transparent background
+        # Generate all icons for every Android screen size
         npx @capacitor/assets generate --android --iconBackgroundColor '#00000000' --iconBackgroundColorDark '#00000000' --splashBackgroundColor '#0B141A'
 
     - name: Create google-services.json for Push Notifications
       env:
         GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
       run: |
-        # BULLETPROOF DECODING: 'tr -d [:space:]' removes all hidden spaces and newlines before decoding
         echo "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 -d > android/app/google-services.json
-        echo "✅ google-services.json created successfully:"
         ls -la android/app/google-services.json
 
-    - name: Clean up unnecessary files from APK
+    - name: Clean up unnecessary files
       run: |
-        # Keep the APK small by removing backend folders
         rm -rf android/app/src/main/assets/public/functions
         rm -rf android/app/src/main/assets/public/.github
         rm -rf android/app/src/main/assets/public/.git
         rm -rf android/app/src/main/assets/public/node_modules
 
-    - name: Add Contact Permissions (READ and WRITE)
+    - name: Add Contact Permissions
       run: |
-        # Inject permissions into the Android Manifest
         sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_CONTACTS" />' android/app/src/main/AndroidManifest.xml
         sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_CONTACTS" />' android/app/src/main/AndroidManifest.xml
 
@@ -78,10 +72,9 @@ jobs:
       run: |
         cd android
         chmod +x gradlew
-        # Added --stacktrace to see precise errors if the build fails
         ./gradlew assembleDebug --stacktrace
 
-    - name: Rename APK to Mofie
+    - name: Rename APK
       run: |
         mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Mofie.apk
 
