@@ -30,29 +30,33 @@ jobs:
     - name: Create www folder and copy ALL web files
       run: |
         mkdir -p www
-        # Copies both jpg and png files now
         cp index.html *.js *.css manifest.json *.jpg *.png *.xml *.txt *.html www/ 2>/dev/null || true
 
     - name: Install dependencies and add Android platform
       run: |
-        npm install
+        # Use --legacy-peer-deps to prevent plugin version conflicts
+        npm install --legacy-peer-deps
+        # Install Capacitor and all required plugins
+        npm install --legacy-peer-deps @capacitor/android @capacitor-community/contacts @capacitor/push-notifications
         npx cap add android
-        # Installs Contacts AND Push Notifications
-        npm install @capacitor/android @capacitor-community/contacts @capacitor/push-notifications
         npx cap sync
 
-    - name: Create google-services.json for Push Notifications
-      run: |
-        echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
-
-    - name: Generate Transparent App Icons & Splash Screens
+    - name: Generate Transparent App Icons
       run: |
         mkdir -p assets
         cp icon.png assets/icon.png
         cp icon.png assets/splash.png
         cp icon.png assets/splash-dark.png
-        # The '#00000000' forces a fully transparent background for the icon
-        npx @capacitor/assets generate --android --iconBackgroundColor '#00000000' --iconBackgroundColorDark '#00000000' --splashBackgroundColor '#0B141A'
+        npx @capacitor/assets generate --android
+
+    - name: Create google-services.json for Push Notifications
+      env:
+        GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+      run: |
+        # Decode the Base64 secret into the exact file path Android expects
+        echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
+        echo "Verifying google-services.json exists:"
+        ls -la android/app/google-services.json
 
     - name: Clean up unnecessary backend files from APK
       run: |
@@ -70,7 +74,8 @@ jobs:
       run: |
         cd android
         chmod +x gradlew
-        ./gradlew assembleDebug
+        # Added --stacktrace so we can see the exact error if it fails again
+        ./gradlew assembleDebug --stacktrace
 
     - name: Rename APK to Mofie
       run: |
