@@ -16,7 +16,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20 # Upgraded to current LTS for stability
+        node-version: 20
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -25,22 +25,19 @@ jobs:
         distribution: 'temurin'
 
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+      uses: android-actions/setup-android@v4 # ✅ UPGRADED from v3 to v4
 
     - name: Create www folder and copy web files
       run: |
         mkdir -p www
-        # Safely copy web assets, ignoring errors if some glob patterns don't match
         cp -r *.html *.js *.css *.json *.jpg *.png *.xml *.txt www/ 2>/dev/null || true
 
     - name: Install NPM Dependencies
       run: |
-        # Uses package.json exclusively to prevent version conflicts
         npm install --legacy-peer-deps 
 
     - name: Add Android Platform and Sync
       run: |
-        # If the android folder doesn't exist, add it. Then always sync.
         if [ ! -d "android" ]; then
           npx cap add android
         fi
@@ -92,7 +89,6 @@ jobs:
 
     - name: Add Required Permissions to AndroidManifest
       run: |
-        # Safer injection: adds permissions just before the closing </manifest> tag
         sed -i 's|</manifest>|<uses-permission android:name="android.permission.READ_CONTACTS" />\n    <uses-permission android:name="android.permission.WRITE_CONTACTS" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n</manifest>|' android/app/src/main/AndroidManifest.xml
         
         echo "Verifying permissions:"
