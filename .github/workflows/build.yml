@@ -18,11 +18,11 @@ jobs:
       with:
         node-version: 18
 
-    # 🟢 Use JDK 21 as required by Capacitor plugins
-    - name: Set up JDK 21
+    # 🟢 REVERTED TO JAVA 17: Fully compatible with Gradle 8.0.2
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '21'
+        java-version: '17'
         distribution: 'temurin'
 
     - name: Setup Android SDK
@@ -79,16 +79,12 @@ jobs:
         sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_CONTACTS" />' android/app/src/main/AndroidManifest.xml
         sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_CONTACTS" />' android/app/src/main/AndroidManifest.xml
 
-    # 🟢 NEW STEP: Upgrade Gradle wrapper to 8.5 to support Java 21
-    - name: Upgrade Gradle Wrapper
-      run: |
-        cd android
-        chmod +x gradlew
-        ./gradlew wrapper --gradle-version 8.5
+    # 🟢 REMOVED the "Upgrade Gradle Wrapper" step to prevent the Java 21 conflict
 
     - name: Build APK
       run: |
         cd android
+        chmod +x gradlew
         ./gradlew clean
         ./gradlew assembleDebug --stacktrace
 
