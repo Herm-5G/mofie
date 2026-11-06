@@ -57,8 +57,13 @@ jobs:
         chmod +x gradlew
         ./gradlew assembleDebug
 
+    # 🟢 THIS IS THE NEW STEP THAT RENAMES THE FILE 🟢
+    - name: Rename APK to Mofie
+      run: |
+        mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Mofie.apk
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: Mofie-APK
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+        path: android/app/build/outputs/apk/debug/Mofie.apk
