@@ -89,7 +89,8 @@ jobs:
 
     - name: Add Required Permissions to AndroidManifest
       run: |
-        sed -i 's|</manifest>|<uses-permission android:name="android.permission.READ_CONTACTS" />\n    <uses-permission android:name="android.permission.WRITE_CONTACTS" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n</manifest>|' android/app/src/main/AndroidManifest.xml
+        # ✅ FIXED: Added POST_NOTIFICATIONS for Android 13+
+        sed -i 's|</manifest>|<uses-permission android:name="android.permission.READ_CONTACTS" />\n    <uses-permission android:name="android.permission.WRITE_CONTACTS" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>|' android/app/src/main/AndroidManifest.xml
         
         echo "Verifying permissions:"
         grep "uses-permission" android/app/src/main/AndroidManifest.xml
