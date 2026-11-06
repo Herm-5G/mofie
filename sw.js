@@ -11,46 +11,58 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+const DEFAULT_ICON = "https://res.cloudinary.com/rirfqxoz/image/upload/IMG-20261022-WA0000.jpg";
 
+// Called when a push arrives while the app is closed/backgrounded
 messaging.onBackgroundMessage((payload) => {
   const d = payload.data || {};
   const n = payload.notification || {};
 
-  const chatId = d.chatId || 'mofie';
-  const title = d.senderName || n.title || 'Mofie';
-  const body = d.messageText || n.body || 'New message';
+  // If FCM auto-displayed (notification payload present), don't double-show.
+  if (n.title || n.body) return;
 
-  if (!payload.notification) {
-    self.registration.showNotification(title, {
-      body: body,
-      icon: 'https://res.cloudinary.com/rirfqxoz/image/upload/IMG-20261022-WA0000.jpg',
-      badge: 'https://res.cloudinary.com/rirfqxoz/image/upload/IMG-20261022-WA0000.jpg',
-      tag: chatId,
-      renotify: true,
-      silent: false,
-      data: { chatId: chatId }
-    });
-  }
+  const chatId     = d.chatId || "";
+  const senderName = d.senderName || "Mofie";
+  const body       = d.messageText || "New message";
+
+  self.registration.showNotification(senderName, {
+    body,
+    icon:  DEFAULT_ICON,
+    badge: DEFAULT_ICON,
+    tag:   chatId,               // groups notifications per chat
+    renotify: true,              
+    requireInteraction: false,   // auto-dismiss banner
+    silent: false,
+    vibrate: [120, 80, 120],
+    data: { chatId, senderName }
+  });
 });
 
-self.addEventListener('notificationclick', (e) => {
+// Click -> open or focus the app on the correct chat
+self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  const chatId = e.notification.data?.chatId || e.notification.tag || 'mofie';
-
-  // ✅ FIXED: /Mhail-frontend/ → /mofie/
-  const url = chatId && chatId !== 'mofie'
-    ? `${self.location.origin}/mofie/?chat=${encodeURIComponent(chatId)}`
-    : `${self.location.origin}/mofie/`;
+  const chatId = e.notification.data?.chatId || e.notification.tag || "";
+  const base   = `${self.location.origin}/mofie/`;
+  const url    = chatId ? `${base}?chat=${encodeURIComponent(chatId)}` : base;
 
   e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
       for (const c of list) {
-        if (c.url.startsWith(self.location.origin) && 'focus' in c) {
-          c.postMessage({ type: 'OPEN_CHAT', chatId });
+        if (c.url.startsWith(self.location.origin) && "focus" in c) {
+          c.postMessage({ type: "OPEN_CHAT", chatId });
           return c.focus();
         }
       }
       return clients.openWindow(url);
     })
+  );
+});
+
+// Subscription rotated -> ask the page to refresh the token
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true })
+      .then(list => list.forEach(c => c.postMessage({ type: "RESUBSCRIBE_PUSH" })))
+      .catch(() => {})
   );
 });
