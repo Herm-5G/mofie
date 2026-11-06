@@ -16,9 +16,8 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 18
+        node-version: 20 # Upgraded to current LTS for stability
 
-    # Java 17 is required for Capacitor 5
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -26,31 +25,29 @@ jobs:
         distribution: 'temurin'
 
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v4
+      uses: android-actions/setup-android@v3
 
     - name: Create www folder and copy web files
       run: |
         mkdir -p www
-        cp index.html *.js *.css manifest.json *.jpg *.png *.xml *.txt *.html www/ 2>/dev/null || true
+        # Safely copy web assets, ignoring errors if some glob patterns don't match
+        cp -r *.html *.js *.css *.json *.jpg *.png *.xml *.txt www/ 2>/dev/null || true
 
-    - name: Install dependencies and add Android platform
+    - name: Install NPM Dependencies
       run: |
-        npm install --legacy-peer-deps
-        # Pinning Capacitor 5 to ensure compatibility with Java 17
-        # ✅ FIXED: Added @5 to @capacitor/contacts
-        npm install --legacy-peer-deps \
-          @capacitor/android@5 \
-          @capacitor/contacts@5 \
-          @capacitor/camera@5 \
-          @capacitor/push-notifications@5 \
-          @capacitor/splash-screen@5 \
-          @capacitor/assets
-        npx cap add android
-        npx cap sync
+        # Uses package.json exclusively to prevent version conflicts
+        npm install --legacy-peer-deps 
+
+    - name: Add Android Platform and Sync
+      run: |
+        # If the android folder doesn't exist, add it. Then always sync.
+        if [ ! -d "android" ]; then
+          npx cap add android
+        fi
+        npx cap sync android
 
     - name: Clean old Android native icons
       run: |
-        # This forces Android to delete the default robot icons
         rm -rf android/app/src/main/res/mipmap-*
         rm -rf android/app/src/main/res/drawable*/splash*
 
@@ -61,7 +58,6 @@ jobs:
         cp icon.png assets/splash.png
         cp icon.png assets/splash-dark.png
         
-        # Using #0B141A instead of transparent to prevent the black box square
         npx @capacitor/assets generate --android \
           --iconBackgroundColor '#0B141A' \
           --iconBackgroundColorDark '#0B141A' \
@@ -70,7 +66,6 @@ jobs:
     - name: Verify Splash Screen Resources
       run: |
         echo "Checking for splash resources..."
-        find android/app/src/main/res -name "splash*"
         if [ -z "$(find android/app/src/main/res -name 'splash*')" ]; then
           echo "❌ ERROR: Splash screen resources were NOT generated!"
           exit 1
@@ -86,24 +81,21 @@ jobs:
           echo "⚠️ WARNING: GOOGLE_SERVICES_JSON_BASE64 secret is not set. Push notifications may fail."
         else
           echo "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 -d > android/app/google-services.json
-          echo "✅ google-services.json created successfully:"
-          ls -la android/app/google-services.json
+          echo "✅ google-services.json created successfully."
         fi
 
-    - name: Clean up unnecessary files from APK
+    - name: Clean up unnecessary files
       run: |
         rm -rf android/app/src/main/assets/public/functions
         rm -rf android/app/src/main/assets/public/.github
         rm -rf android/app/src/main/assets/public/.git
 
-    # --- Injects Contacts, Camera, and Mic Permissions ---
     - name: Add Required Permissions to AndroidManifest
       run: |
-        # Inject permissions right before the <application> tag
-        sed -i 's/<application/    <uses-permission android:name="android.permission.READ_CONTACTS" \/>\n    <uses-permission android:name="android.permission.WRITE_CONTACTS" \/>\n    <uses-permission android:name="android.permission.CAMERA" \/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO" \/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" \/>\n\n    <application/' android/app/src/main/AndroidManifest.xml
+        # Safer injection: adds permissions just before the closing </manifest> tag
+        sed -i 's|</manifest>|<uses-permission android:name="android.permission.READ_CONTACTS" />\n    <uses-permission android:name="android.permission.WRITE_CONTACTS" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n</manifest>|' android/app/src/main/AndroidManifest.xml
         
-        # Verify the permissions were added successfully in the logs
-        echo "Verifying permissions in AndroidManifest:"
+        echo "Verifying permissions:"
         grep "uses-permission" android/app/src/main/AndroidManifest.xml
 
     - name: Build APK
@@ -113,11 +105,11 @@ jobs:
         ./gradlew clean
         ./gradlew assembleDebug --stacktrace
 
-    - name: Rename APK to Mofie
+    - name: Rename APK
       run: |
         mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Mofie.apk
 
-    - name: Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Mofie-APK
