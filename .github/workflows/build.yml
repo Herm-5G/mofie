@@ -40,6 +40,7 @@ jobs:
         npm install --legacy-peer-deps \
           @capacitor/android@5 \
           @capacitor-community/contacts@5 \
+          @capacitor/camera@5 \
           @capacitor/push-notifications@5 \
           @capacitor/splash-screen@5 \
           @capacitor/assets
@@ -94,16 +95,16 @@ jobs:
         rm -rf android/app/src/main/assets/public/.github
         rm -rf android/app/src/main/assets/public/.git
 
-    # --- THIS IS THE NEW STEP TO FIX YOUR ERROR ---
-    - name: Add Contacts Permissions to AndroidManifest
+    # --- UPDATED: Injects Contacts, Camera, and Mic Permissions ---
+    - name: Add Required Permissions to AndroidManifest
       run: |
-        # Inject READ and WRITE contacts permissions right before the <application> tag
-        sed -i 's/<application/    <uses-permission android:name="android.permission.READ_CONTACTS" \/>\n    <uses-permission android:name="android.permission.WRITE_CONTACTS" \/>\n\n    <application/' android/app/src/main/AndroidManifest.xml
+        # Inject permissions right before the <application> tag
+        sed -i 's/<application/    <uses-permission android:name="android.permission.READ_CONTACTS" \/>\n    <uses-permission android:name="android.permission.WRITE_CONTACTS" \/>\n    <uses-permission android:name="android.permission.CAMERA" \/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO" \/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" \/>\n\n    <application/' android/app/src/main/AndroidManifest.xml
         
         # Verify the permissions were added successfully in the logs
         echo "Verifying permissions in AndroidManifest:"
         grep "uses-permission" android/app/src/main/AndroidManifest.xml
-    # ----------------------------------------------
+    # --------------------------------------------------------------
 
     - name: Build APK
       run: |
