@@ -30,23 +30,29 @@ jobs:
     - name: Create www folder and copy ALL web files
       run: |
         mkdir -p www
-        cp index.html *.js *.css manifest.json *.jpg *.xml *.txt *.html www/ 2>/dev/null || true
+        # Copies both jpg and png files now
+        cp index.html *.js *.css manifest.json *.jpg *.png *.xml *.txt *.html www/ 2>/dev/null || true
 
     - name: Install dependencies and add Android platform
       run: |
         npm install
         npx cap add android
-        npm install @capacitor/android @capacitor-community/contacts
+        # Installs Contacts AND Push Notifications
+        npm install @capacitor/android @capacitor-community/contacts @capacitor/push-notifications
         npx cap sync
 
-    # 🟢 NEW: GENERATE CUSTOM APP ICONS 🟢
-    - name: Generate App Icons
+    - name: Create google-services.json for Push Notifications
+      run: |
+        echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+    - name: Generate Transparent App Icons & Splash Screens
       run: |
         mkdir -p assets
-        # Copy your existing icon.jpg to the assets folder and rename it to icon.png
-        cp icon.jpg assets/icon.png
-        # Run the official Capacitor tool to generate all Android icon sizes
-        npx @capacitor/assets generate --android
+        cp icon.png assets/icon.png
+        cp icon.png assets/splash.png
+        cp icon.png assets/splash-dark.png
+        # The '#00000000' forces a fully transparent background for the icon
+        npx @capacitor/assets generate --android --iconBackgroundColor '#00000000' --iconBackgroundColorDark '#00000000' --splashBackgroundColor '#0B141A'
 
     - name: Clean up unnecessary backend files from APK
       run: |
