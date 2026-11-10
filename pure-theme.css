@@ -1,0 +1,232 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   ULTIMATE FLAT UI OVERRIDE — NO LINES, PURE WHITE/BLACK ONLY
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. ENFORCE PURE WHITE / PURE BLACK THEME VARIABLES */
+:root {
+  --bg-main: #000000 !important;
+  --bg-panel: #000000 !important;
+  --hover: rgba(255, 255, 255, 0.05) !important;
+  --border: rgba(255, 255, 255, 0.1) !important; 
+  --border-light: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="light"] {
+  --bg-main: #FFFFFF !important;
+  --bg-panel: #FFFFFF !important;
+  --hover: rgba(0, 0, 0, 0.03) !important;
+  --border: rgba(0, 0, 0, 0.1) !important;
+  --border-light: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="neon"] {
+  --bg-main: #000000 !important;
+  --bg-panel: #000000 !important;
+  --hover: rgba(255, 255, 255, 0.05) !important;
+  --border: rgba(255, 255, 255, 0.1) !important;
+  --border-light: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 2. FORCE ALL MAIN CONTAINERS TO BE FLAT & SEAMLESS */
+html, body, 
+.app-container, .sidebar, .chat-window, .app-view,
+#view-chats, #view-calls, #view-profile, .chat-list,
+.header, .chat-header, .search-row, .tabs-row, .bottom-nav,
+.clean-profile-header, .wa-profile-row, .clean-settings-card, 
+.clean-settings-item, .composer, .messages, .settings-page, 
+.app-full-page, .page-content-scroll, .chat-info-page, 
+.call-log-item, .modal, .toast, .clean-settings-section,
+.clean-section-title, .clean-footer {
+  background-color: var(--bg-panel) !important;
+  background: var(--bg-panel) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. DESTROY ALL LINES ON ACCOUNT, CHAT INFO & PROFILE PAGES
+   ═══════════════════════════════════════════════════════════════════════ */
+
+html body .app-full-page .clean-settings-section,
+html body .app-full-page .clean-settings-card,
+html body .app-full-page .clean-settings-item,
+html body .app-full-page .clean-section-title,
+html body .app-full-page .wa-profile-row,
+html body .app-full-page .clean-profile-header,
+html body .chat-info-page .clean-settings-section,
+html body .chat-info-page .clean-settings-card,
+html body .chat-info-page .clean-settings-item,
+html body .chat-info-page .clean-section-title,
+html body .chat-info-page .wa-profile-row,
+html body .chat-info-page .clean-profile-header,
+html body #view-profile .clean-settings-section,
+html body #view-profile .clean-settings-card,
+html body #view-profile .clean-settings-item,
+html body #view-profile .clean-section-title,
+html body #view-profile .wa-profile-row {
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+html body .app-full-page .clean-settings-item::before,
+html body .app-full-page .clean-settings-item::after,
+html body .app-full-page .clean-settings-card::before,
+html body .app-full-page .clean-settings-card::after,
+html body .chat-info-page .clean-settings-item::before,
+html body .chat-info-page .clean-settings-item::after,
+html body .chat-info-page .clean-settings-card::before,
+html body .chat-info-page .clean-settings-card::after,
+html body #view-profile .clean-settings-item::before,
+html body #view-profile .clean-settings-item::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4. PERFECT ALIGNMENT (Account page text shifted left)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* General row layout */
+html body .app-full-page .clean-settings-item,
+html body .chat-info-page .clean-settings-item,
+html body #view-profile .clean-settings-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 16px 20px !important;
+  text-align: left !important;
+}
+
+/* THE FIX: Force Account page text all the way to the left */
+html body .app-full-page .clean-settings-item {
+  gap: 0 !important; /* Removes the 16px gap left behind by icons */
+}
+html body .app-full-page .clean-icon {
+  display: none !important; /* Hides the empty icon container */
+}
+html body .app-full-page .clean-info {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+/* Keep spacing normal for Chat Info & Profile (which still have icons) */
+html body .chat-info-page .clean-settings-item,
+html body #view-profile .clean-settings-item {
+  gap: 16px !important;
+}
+html body .chat-info-page .clean-icon,
+html body #view-profile .clean-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  color: initial !important;
+}
+
+/* Text styles */
+html body .app-full-page .clean-info h4,
+html body .chat-info-page .clean-info h4,
+html body #view-profile .clean-info h4 {
+  text-align: left !important;
+  margin: 0 0 2px 0 !important;
+}
+
+html body .app-full-page .clean-info p,
+html body .chat-info-page .clean-info p,
+html body #view-profile .clean-info p {
+  text-align: left !important;
+  margin: 0 !important;
+}
+
+/* 5. MATCH SECTION TITLES EXACTLY TO PROFILE PAGE */
+html body .app-full-page .clean-section-title,
+html body .chat-info-page .clean-section-title,
+html body #view-profile .clean-section-title {
+  background: transparent !important;
+  color: var(--user-accent-1) !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  margin: 24px 0 8px 20px !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+/* 6. REMOVE TAP HIGHLIGHT BACKGROUNDS */
+html body .app-full-page .clean-settings-item:active,
+html body .app-full-page .clean-settings-item:hover,
+html body .chat-info-page .clean-settings-item:active,
+html body .chat-info-page .clean-settings-item:hover,
+html body #view-profile .clean-settings-item:active,
+html body #view-profile .clean-settings-item:hover {
+  background: transparent !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   7. GLOBAL LINE REMOVAL (Chat List, Headers, etc.)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+html body .header, 
+html body .chat-header, 
+html body .search-row, 
+html body .tabs-row, 
+html body .bottom-nav,
+html body .chat-item, 
+html body .call-log-item, 
+html body .wa-profile-row,
+html body .composer, 
+html body .modal,
+html body .settings-list, 
+html body .chat-search-bar, 
+html body .clean-profile-header {
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
+}
+
+/* 8. RESTORE BORDERS TO INPUTS AND TABS */
+html body .search-row input, html body #search {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border) !important;
+}
+html body .tab-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: var(--text-muted) !important;
+}
+html body .tab-btn.active {
+  background: var(--user-accent-tint) !important;
+  color: var(--user-accent-1) !important;
+  border: 1px solid var(--user-accent-1) !important;
+}
+
+/* 9. FLATTEN THE COMPOSER (INPUT BAR) */
+html body .composer .input-wrap {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border) !important; 
+}
+
+/* 10. CHAT BUBBLES */
+html body .msg-row.them .bubble {
+  border: none !important;
+}
+[data-theme="dark"] html body .msg-row.them .bubble,
+[data-theme="neon"] html body .msg-row.them .bubble {
+  background-color: rgba(255, 255, 255, 0.08) !important; 
+}

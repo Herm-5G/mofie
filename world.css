@@ -1,0 +1,185 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   MOFIE — WORLD.CSS · RTL, Data-Saver, Keyboard, Accessibility
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. RTL SUPPORT ─────────────────────────────────────────────────── */
+[dir="rtl"] .composer { flex-direction: row-reverse !important; }
+[dir="rtl"] .chat-header { flex-direction: row-reverse !important; }
+[dir="rtl"] .header-actions { margin-left: 0 !important; margin-right: auto !important; }
+[dir="rtl"] .msg-row.me { align-items: flex-start !important; }
+[dir="rtl"] .msg-row.them { align-items: flex-end !important; }
+[dir="rtl"] .msg-row.me .bubble {
+  border-top-right-radius: 20px !important;
+  border-top-left-radius: 4px !important;
+}
+[dir="rtl"] .msg-row.them .bubble {
+  border-top-left-radius: 20px !important;
+  border-top-right-radius: 4px !important;
+}
+[dir="rtl"] .msg-meta { float: left !important; margin: 4px 8px -3px 0 !important; }
+[dir="rtl"] .reply-quote {
+  border-left: none !important;
+  border-right: 4px solid var(--user-accent-1) !important;
+}
+[dir="rtl"] #back-btn svg { transform: scaleX(-1); }
+[dir="rtl"] .send-btn svg { transform: scaleX(-1); }
+[dir="rtl"] .chat-name,
+[dir="rtl"] .chat-preview,
+[dir="rtl"] .chat-header .chat-name,
+[dir="rtl"] .chat-header .chat-status,
+[dir="rtl"] .settings-header h2,
+[dir="rtl"] .clean-profile-header h2,
+[dir="rtl"] .clean-section-title,
+[dir="rtl"] .clean-info h4,
+[dir="rtl"] .clean-info p { text-align: right !important; }
+[dir="rtl"] .clean-settings-item { flex-direction: row-reverse !important; }
+[dir="rtl"] .clean-icon { margin-right: 0 !important; margin-left: 16px !important; }
+[dir="rtl"] .swipe-reply-icon {
+  left: auto; right: -36px; transform: translateY(-50%) scaleX(-1);
+}
+[dir="rtl"] .msg-row.me .swipe-reply-icon {
+  left: -36px; right: auto; transform: translateY(-50%);
+}
+
+/* ── 2. DATA SAVER MODE ─────────────────────────────────────────────── */
+[data-saver="1"] .msg-row img,
+[data-saver="1"] .msg-row video { display: none !important; }
+[data-saver="1"] .sticker-img { display: none !important; }
+[data-saver="1"] .ai-generated-image { display: none !important; }
+[data-saver="1"] .media-viewer video { display: none !important; }
+
+/* ── 3. MOBILE KEYBOARD & VIEWPORT ───────────────────────────────────── */
+@supports not (height: 100dvh) {
+  .app-container, .chat-window, .app-view, #view-profile {
+    height: calc(var(--vh, 1vh) * 100) !important;
+  }
+}
+.chat-window.active .composer {
+  transform: translateY(calc(-1 * var(--keyboard-offset, 0px)));
+  transition: transform 0.15s ease-out;
+}
+body.keyboard-open .messages {
+  padding-bottom: calc(10px + var(--keyboard-offset, 0px)) !important;
+}
+
+/* ── 4. ACCESSIBILITY ────────────────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid var(--user-accent-1) !important;
+  outline-offset: 2px !important;
+}
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 100000;
+  padding: 12px 20px; background: var(--user-accent-1); color: #fff;
+  border-radius: 0 0 8px 0; font-weight: 700; text-decoration: none;
+}
+.skip-link:focus { left: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ai-fab-glow, .boot-spinner, .call-avatar,
+  .status-progress-bar.active > div { animation: none !important; }
+}
+
+@media (forced-colors: active) {
+  .bubble { border: 1px solid CanvasText !important; }
+  .btn-primary { border: 2px solid ButtonText !important; }
+  .msg-status-dot { border: 1px solid CanvasText !important; }
+}
+
+@media (max-width: 480px) {
+  .chat-header .header-actions .icon,
+  .bottom-nav-btn,
+  .send-btn { min-width: 44px; min-height: 44px; }
+}
+
+/* ── 5. LANGUAGE PICKER ──────────────────────────────────────────────── */
+.lang-picker {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  margin-bottom: 12px; max-height: 240px; overflow-y: auto;
+}
+.lang-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 12px;
+  background: var(--bg-main); border: 1.5px solid transparent;
+  cursor: pointer; font-size: 14px; font-weight: 600;
+  color: var(--text); transition: background 0.15s, border-color 0.15s;
+}
+.lang-option:hover { background: var(--hover); }
+.lang-option.active {
+  border-color: var(--user-accent-1);
+  color: var(--user-accent-1);
+  background: var(--user-accent-tint);
+}
+.lang-option .lang-flag { font-size: 18px; }
+
+/* ── 6. RETRY TOAST ──────────────────────────────────────────────────── */
+.retry-toast {
+  position: fixed; bottom: 100px; left: 50%;
+  transform: translateX(-50%);
+  background: #ef4444; color: #fff;
+  padding: 12px 20px; border-radius: 24px;
+  font-size: 13px; font-weight: 700;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+  z-index: 12000; display: flex; align-items: center; gap: 12px;
+  animation: fadeIn 0.2s ease; max-width: calc(100vw - 24px);
+}
+.retry-toast button {
+  background: rgba(255, 255, 255, 0.25); color: #fff;
+  border: none; padding: 6px 14px; border-radius: 12px;
+  font-weight: 700; font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.retry-toast button:active { transform: scale(0.95); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FIX ARABIC RTL LAYOUT BREAKS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Fix the Bottom Nav (stop it from squishing to the left) */
+[dir="rtl"] .bottom-nav {
+  flex-direction: row !important; /* Stops it from reversing and breaking */
+  left: 0 !important;
+  right: 0 !important;
+}
+[dir="rtl"] .bottom-nav-btn {
+  flex: 1 !important;
+  max-width: 110px !important;
+}
+
+/* 2. Fix the Chat Window (stop it from floating in the middle) */
+[dir="rtl"] .chat-window {
+  left: auto !important;
+  right: 0 !important;
+  transform: translateX(100%) !important; /* Hide offscreen to the right */
+}
+[dir="rtl"] .chat-window.active {
+  transform: translateX(0) !important; /* Slide in */
+}
+
+/* 3. Fix the AI Assistant Button & Window */
+[dir="rtl"] .ai-fab-container {
+  right: auto !important;
+  left: 20px !important; /* Move AI button to the left side for RTL */
+}
+[dir="rtl"] .ai-chat-window {
+  right: auto !important;
+  left: 50% !important;
+  transform: translate(-50%, 100%) !important;
+}
+[dir="rtl"] .ai-chat-window.open {
+  transform: translate(-50%, 0) !important;
+}
+
+/* 4. Fix the Chat Composer Input Bar */
+[dir="rtl"] .composer {
+  flex-direction: row-reverse !important;
+}
+
+/* 5. Fix the Send Button (flip the arrow direction) */
+[dir="rtl"] .send-btn svg {
+  transform: scaleX(-1) !important; 
+}
