@@ -41,12 +41,47 @@ jobs:
         fi
         npx cap sync android
 
-    # 🔥 CRITICAL STEP: Inject Native Java & Manifest Files
+    # 🔥 1. Inject Native Java & Manifest Files
     - name: Overlay Custom Native Files
       run: |
         cp -r native-overrides/. android/app/src/main/
         echo "Injected Native Files:"
         ls -la android/app/src/main/java/com/mofie/app/
+
+    # 🔥 2. Add Firebase SDK Dependencies (THIS WAS MISSING)
+    - name: Add Firebase dependencies to build.gradle
+      run: |
+        # Insert Firebase dependencies right after the "dependencies {" line
+        sed -i "/dependencies {/a \    implementation platform('com.google.firebase:firebase-bom:32.7.0')\n    implementation 'com.google.firebase:firebase-messaging'" android/app/build.gradle
+        echo "Added Firebase to app/build.gradle:"
+        grep -A 2 "dependencies {" android/app/build.gradle
+
+    - name: Patch Gradle for Firebase plugin
+      run: |
+        python3 <<'PY'
+        import pathlib
+        root = pathlib.Path("android/build.gradle")
+        s = root.read_text()
+        if "com.google.gms:google-services" not in s:
+            s = s.replace("classpath 'com.android.tools.build:gradle", "classpath 'com.google.gms:google-services:4.4.2'\n        classpath 'com.android.tools.build:gradle", 1)
+            root.write_text(s)
+        app = pathlib.Path("android/app/build.gradle")
+        s = app.read_text()
+        if "com.google.gms.google-services" not in s:
+            s = s.replace("apply plugin: 'com.android.application'", "apply plugin: 'com.android.application'\napply plugin: 'com.google.gms.google-services'", 1)
+            app.write_text(s)
+        PY
+
+    - name: Create google-services.json for Push Notifications
+      env:
+        GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+      run: |
+        if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+          echo "⚠️ WARNING: GOOGLE_SERVICES_JSON_BASE64 secret is not set."
+        else
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 -d > android/app/google-services.json
+          echo "✅ google-services.json created successfully."
+        fi
 
     - name: Clean old Android native icons
       run: |
@@ -66,17 +101,6 @@ jobs:
         if [ -z "$(find android/app/src/main/res -name 'splash*')" ]; then
           echo "❌ ERROR: Splash screen resources were NOT generated!"; exit 1;
         else echo "✅ Splash screen resources found!"; fi
-
-    - name: Create google-services.json for Push Notifications
-      env:
-        GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
-      run: |
-        if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
-          echo "⚠️ WARNING: GOOGLE_SERVICES_JSON_BASE64 secret is not set."
-        else
-          echo "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 -d > android/app/google-services.json
-          echo "✅ google-services.json created successfully."
-        fi
 
     - name: Build APK
       run: |
