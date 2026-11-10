@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -25,7 +24,7 @@ jobs:
         distribution: 'temurin'
 
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v4 # ✅ UPGRADED from v3 to v4
+      uses: android-actions/setup-android@v4
 
     - name: Create www folder and copy web files
       run: |
@@ -33,8 +32,7 @@ jobs:
         cp -r *.html *.js *.css *.json *.jpg *.png *.xml *.txt www/ 2>/dev/null || true
 
     - name: Install NPM Dependencies
-      run: |
-        npm install --legacy-peer-deps 
+      run: npm install --legacy-peer-deps 
 
     - name: Add Android Platform and Sync
       run: |
@@ -42,6 +40,13 @@ jobs:
           npx cap add android
         fi
         npx cap sync android
+
+    # 🔥 CRITICAL STEP: Inject Native Java & Manifest Files
+    - name: Overlay Custom Native Files
+      run: |
+        cp -r native-overrides/. android/app/src/main/
+        echo "Injected Native Files:"
+        ls -la android/app/src/main/java/com/mofie/app/
 
     - name: Clean old Android native icons
       run: |
@@ -54,46 +59,24 @@ jobs:
         cp icon.png assets/icon.png
         cp icon.png assets/splash.png
         cp icon.png assets/splash-dark.png
-        
-        npx @capacitor/assets generate --android \
-          --iconBackgroundColor '#0B141A' \
-          --iconBackgroundColorDark '#0B141A' \
-          --splashBackgroundColor '#0B141A'
+        npx @capacitor/assets generate --android --iconBackgroundColor '#0B141A' --iconBackgroundColorDark '#0B141A' --splashBackgroundColor '#0B141A'
 
     - name: Verify Splash Screen Resources
       run: |
-        echo "Checking for splash resources..."
         if [ -z "$(find android/app/src/main/res -name 'splash*')" ]; then
-          echo "❌ ERROR: Splash screen resources were NOT generated!"
-          exit 1
-        else
-          echo "✅ Splash screen resources found!"
-        fi
+          echo "❌ ERROR: Splash screen resources were NOT generated!"; exit 1;
+        else echo "✅ Splash screen resources found!"; fi
 
     - name: Create google-services.json for Push Notifications
       env:
         GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
       run: |
         if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
-          echo "⚠️ WARNING: GOOGLE_SERVICES_JSON_BASE64 secret is not set. Push notifications may fail."
+          echo "⚠️ WARNING: GOOGLE_SERVICES_JSON_BASE64 secret is not set."
         else
           echo "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 -d > android/app/google-services.json
           echo "✅ google-services.json created successfully."
         fi
-
-    - name: Clean up unnecessary files
-      run: |
-        rm -rf android/app/src/main/assets/public/functions
-        rm -rf android/app/src/main/assets/public/.github
-        rm -rf android/app/src/main/assets/public/.git
-
-    - name: Add Required Permissions to AndroidManifest
-      run: |
-        # ✅ FIXED: Added POST_NOTIFICATIONS for Android 13+
-        sed -i 's|</manifest>|<uses-permission android:name="android.permission.READ_CONTACTS" />\n    <uses-permission android:name="android.permission.WRITE_CONTACTS" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>|' android/app/src/main/AndroidManifest.xml
-        
-        echo "Verifying permissions:"
-        grep "uses-permission" android/app/src/main/AndroidManifest.xml
 
     - name: Build APK
       run: |
