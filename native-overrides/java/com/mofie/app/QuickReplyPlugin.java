@@ -1,14 +1,10 @@
 package com.mofie.app;
 
 import android.Manifest;
-import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
-import android.provider.Settings;
-import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -51,7 +47,7 @@ public class QuickReplyPlugin extends Plugin {
 
     @PluginMethod
     public void requestNotificationPermission(PluginCall call) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) { call.resolve(); return; }
+        if (Build.VERSION.SDK_INT < 33) { call.resolve(); return; } // TIRAMISU is 33
         if (getActivity() == null) { call.reject("No activity"); return; }
         getActivity().requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 701);
         call.resolve();
@@ -62,20 +58,18 @@ public class QuickReplyPlugin extends Plugin {
         JSObject ret = new JSObject(); ret.put("chatId", MainActivity.consumePendingChatId()); call.resolve(ret);
     }
 
-    // ✅ NEW METHOD: Request Full Screen Intent Permission (Required for Android 12+)
+    // ✅ FIXED: Using raw integer and string to prevent compilation errors on older SDKs
     @PluginMethod
     public void requestFullScreenIntent(PluginCall call) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14+
-            NotificationManager nm = getContext().getSystemService(NotificationManager.class);
-            if (nm != null && !nm.canUseFullScreenIntent()) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT);
+        try {
+            if (Build.VERSION.SDK_INT >= 34) { // Android 14+
+                Intent intent = new Intent("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT");
                 intent.setData(Uri.parse("package:" + getContext().getPackageName()));
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 getContext().startActivity(intent);
             }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // Android 12 & 13
-            // Some OEMs (like Xiaomi/Samsung) have their own full-screen intent settings
-            // If you experience issues, you may need specific Intents for those manufacturers.
+        } catch (Exception e) {
+            // Ignore if the settings page doesn't exist on this specific device
         }
         call.resolve();
     }
