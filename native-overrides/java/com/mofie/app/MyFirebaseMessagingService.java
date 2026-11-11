@@ -15,7 +15,6 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-    // CHANGED: Appended _v2 to force Android to re-read the IMPORTANCE_HIGH setting
     public static final String CHANNEL_ID = "mofie_messages_high_v2";
     public static final String KEY_REPLY = "mofie_reply_text";
 
@@ -31,13 +30,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showNotification(String title, String body, String chatId) {
-        // 1. WAKE LOCK: Force the CPU to stay awake so the screen can turn on
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
-        wakeLock.acquire(10000); // Hold for 10 seconds
+        wakeLock.acquire(10000); 
 
-        // 2. CHANNEL CREATION: Must be IMPORTANCE_HIGH for pop-ups
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= 26) { // OREO
             NotificationManager mgr = getSystemService(NotificationManager.class);
             if (mgr != null && mgr.getNotificationChannel(CHANNEL_ID) == null) {
                 NotificationChannel ch = new NotificationChannel(CHANNEL_ID, "Messages", NotificationManager.IMPORTANCE_HIGH);
@@ -48,26 +45,23 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             }
         }
 
-        // 3. REPLY ACTION SETUP
         RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY).setLabel("Reply").build();
         Intent replyIntent = new Intent(this, ReplyReceiver.class);
         replyIntent.putExtra("chatId", chatId);
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_MUTABLE;
+        if (Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_MUTABLE; // M is 23
         PendingIntent replyPending = PendingIntent.getBroadcast(this, chatId.hashCode(), replyIntent, flags);
         
         NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(R.drawable.ic_stat_mofie, "Reply", replyPending)
                 .addRemoteInput(remoteInput).setAllowGeneratedReplies(true).build();
 
-        // 4. OPEN APP INTENT SETUP
         Intent openIntent = new Intent(this, MainActivity.class);
         openIntent.putExtra("chatId", chatId);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         int oFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) oFlags |= PendingIntent.FLAG_IMMUTABLE;
+        if (Build.VERSION.SDK_INT >= 23) oFlags |= PendingIntent.FLAG_IMMUTABLE; // M is 23
         PendingIntent openPending = PendingIntent.getActivity(this, chatId.hashCode() + 1, openIntent, oFlags);
 
-        // 5. BUILD THE NOTIFICATION
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_mofie)
                 .setColor(Color.parseColor("#00A884"))
@@ -75,20 +69,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
-                // CATEGORY_CALL forces the system to treat this as an urgent alert
                 .setCategory(NotificationCompat.CATEGORY_CALL) 
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
                 .setContentIntent(openPending)
                 .addAction(replyAction)
                 .setDefaults(NotificationCompat.DEFAULT_VIBRATE | NotificationCompat.DEFAULT_SOUND)
-                // THIS IS THE CRITICAL LINE FOR WAKING THE SCREEN
                 .setFullScreenIntent(openPending, true); 
 
         NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (mgr != null) mgr.notify(chatId.hashCode(), builder.build());
         
-        // Release the wake lock
         if (wakeLock.isHeld()) wakeLock.release();
     }
             }
