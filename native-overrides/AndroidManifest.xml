@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     
-    <!-- ✅ REQUIRED FOR WHATSAPP-STYLE POP-UP NOTIFICATIONS -->
+    <!-- REQUIRED FOR POP-UP NOTIFICATIONS -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Call & Media Permissions -->
@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
 
-    <!-- ✅ BACKGROUND SERVICE PERMISSIONS (Required for Android 14+) -->
+    <!-- BACKGROUND SERVICE PERMISSIONS -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
@@ -48,7 +48,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             
-            <!-- Deep Linking Support -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -57,7 +56,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Firebase Messaging Service -->
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">
@@ -66,17 +64,14 @@
             </intent-filter>
         </service>
 
-        <!-- Background Service -->
         <service
             android:name=".BackgroundService"
             android:exported="false"
             android:foregroundServiceType="microphone|camera|phoneCall|dataSync" />
 
-        <!-- Quick Reply Receiver -->
         <receiver android:name=".ReplyReceiver" android:exported="false" />
 
-        <!-- ✅ FIREBASE NOTIFICATION CONFIGURATION -->
-        <!-- This MUST match the CHANNEL_ID in MyFirebaseMessagingService.java -->
+        <!-- FIREBASE NOTIFICATION CONFIGURATION (v2) -->
         <meta-data 
             android:name="com.google.firebase.messaging.default_notification_channel_id" 
             android:value="mofie_messages_high_v2" />
