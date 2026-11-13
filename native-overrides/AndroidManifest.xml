@@ -9,17 +9,19 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     
-    <!-- REQUIRED FOR POP-UP NOTIFICATIONS -->
+    <!-- Heads-Up Notifications -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
-    <!-- Call & Media Permissions -->
+    <!-- Call & Media -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    
+    <!-- Contacts -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
 
-    <!-- BACKGROUND SERVICE PERMISSIONS -->
+    <!-- Foreground Services -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
@@ -71,7 +73,7 @@
 
         <receiver android:name=".ReplyReceiver" android:exported="false" />
 
-        <!-- FIREBASE NOTIFICATION CONFIGURATION (v2) -->
+        <!-- FIREBASE NOTIFICATION CONFIGURATION -->
         <meta-data 
             android:name="com.google.firebase.messaging.default_notification_channel_id" 
             android:value="mofie_messages_high_v2" />
