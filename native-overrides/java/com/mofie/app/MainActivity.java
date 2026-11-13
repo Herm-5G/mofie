@@ -5,15 +5,26 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     private static volatile String pendingChatId = null;
+    
     public static String consumePendingChatId() {
         String id = pendingChatId; pendingChatId = null; return id;
     }
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(QuickReplyPlugin.class);
         super.onCreate(savedInstanceState);
         captureChatIntent(getIntent());
+
+        // ✅ Start the background service
+        Intent serviceIntent = new Intent(this, BackgroundService.class);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
     }
+    
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -23,6 +34,7 @@ public class MainActivity extends BridgeActivity {
             this.bridge.getWebView().post(() -> this.bridge.getWebView().evaluateJavascript("window.dispatchEvent(new CustomEvent('mofie:openChat',{detail:{chatId:'" + cid + "'}}))", null));
         }
     }
+    
     private void captureChatIntent(Intent intent) {
         if (intent != null && intent.hasExtra("chatId")) {
             String cid = intent.getStringExtra("chatId");
@@ -30,4 +42,4 @@ public class MainActivity extends BridgeActivity {
             intent.removeExtra("chatId");
         }
     }
-                               }
+}
