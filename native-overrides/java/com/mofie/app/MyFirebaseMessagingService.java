@@ -27,6 +27,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String chatId = remoteMessage.getData().get("chatId");
         String senderName = remoteMessage.getData().get("senderName");
 
+        // Fallback to notification payload if data payload is missing
+        if (title == null && remoteMessage.getNotification() != null) {
+            title = remoteMessage.getNotification().getTitle();
+        }
+        if (body == null && remoteMessage.getNotification() != null) {
+            body = remoteMessage.getNotification().getBody();
+        }
+
         if (title == null) title = senderName != null ? senderName : "Mofie";
         if (body == null) body = "New message";
         if (chatId == null) chatId = "default";
@@ -35,83 +43,90 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showNotification(String title, String body, String chatId) {
+        // Acquire wake lock briefly to ensure the screen wakes up for the floating banner
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
         wakeLock.acquire(10000);
 
-        // 1. Create Channel with IMPORTANCE_HIGH (Forces Heads-Up)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManager mgr = getSystemService(NotificationManager.class);
-            if (mgr != null && mgr.getNotificationChannel(CHANNEL_ID) == null) {
-                NotificationChannel ch = new NotificationChannel(
-                        CHANNEL_ID, 
-                        "Chat Messages", 
-                        NotificationManager.IMPORTANCE_HIGH 
-                );
-                ch.enableVibration(true); 
-                ch.setShowBadge(true);
-                ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-                
-                AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .build();
-                ch.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes);
-                
-                mgr.createNotificationChannel(ch);
+        try {
+            // 1. Create Channel with IMPORTANCE_HIGH (Forces Heads-Up)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationManager mgr = getSystemService(NotificationManager.class);
+                if (mgr != null && mgr.getNotificationChannel(CHANNEL_ID) == null) {
+                    NotificationChannel ch = new NotificationChannel(
+                            CHANNEL_ID, 
+                            "Chat Messages", 
+                            NotificationManager.IMPORTANCE_HIGH 
+                    );
+                    ch.enableVibration(true); 
+                    ch.setShowBadge(true);
+                    ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+                    
+                    // Set the default phone notification sound
+                    AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                            .build();
+                    ch.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes);
+                    
+                    mgr.createNotificationChannel(ch);
+                }
+            }
+
+            // 2. Setup "Reply" Action
+            RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY).setLabel("Reply").build();
+            Intent replyIntent = new Intent(this, ReplyReceiver.class);
+            replyIntent.putExtra("chatId", chatId);
+            
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_MUTABLE; 
+            }
+            PendingIntent replyPending = PendingIntent.getBroadcast(this, chatId.hashCode(), replyIntent, flags);
+            
+            NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
+                    R.drawable.ic_stat_mofie, "Reply", replyPending)
+                    .addRemoteInput(remoteInput)
+                    .setAllowGeneratedReplies(true)
+                    .build();
+
+            // 3. Setup Click Action (Open Chat)
+            Intent openIntent = new Intent(this, MainActivity.class);
+            openIntent.putExtra("chatId", chatId);
+            openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            
+            int openFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                openFlags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+            PendingIntent openPending = PendingIntent.getActivity(this, chatId.hashCode() + 1, openIntent, openFlags);
+
+            // 4. Build Notification
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_mofie)
+                    .setColor(Color.parseColor("#00A884")) // WhatsApp Green
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH) 
+                    .setDefaults(NotificationCompat.DEFAULT_ALL) 
+                    .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setAutoCancel(true)
+                    .setContentIntent(openPending)
+                    .setFullScreenIntent(openPending, true) // ✅ Forces the floating banner
+                    .setGroup(chatId) 
+                    .addAction(replyAction); 
+
+            NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (mgr != null) {
+                mgr.notify(chatId.hashCode(), builder.build());
+            }
+        } finally {
+            // Always release the wake lock to prevent battery drain
+            if (wakeLock.isHeld()) {
+                wakeLock.release();
             }
         }
-
-        // 2. Setup "Reply" Action
-        RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY).setLabel("Reply").build();
-        Intent replyIntent = new Intent(this, ReplyReceiver.class);
-        replyIntent.putExtra("chatId", chatId);
-        
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flags |= PendingIntent.FLAG_MUTABLE; 
-        }
-        PendingIntent replyPending = PendingIntent.getBroadcast(this, chatId.hashCode(), replyIntent, flags);
-        
-        NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
-                R.drawable.ic_stat_mofie, "Reply", replyPending)
-                .addRemoteInput(remoteInput)
-                .setAllowGeneratedReplies(true)
-                .build();
-
-        // 3. Setup Click Action (Open Chat)
-        Intent openIntent = new Intent(this, MainActivity.class);
-        openIntent.putExtra("chatId", chatId);
-        openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        
-        int openFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            openFlags |= PendingIntent.FLAG_IMMUTABLE;
-        }
-        PendingIntent openPending = PendingIntent.getActivity(this, chatId.hashCode() + 1, openIntent, openFlags);
-
-        // 4. Build Notification
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_mofie)
-                .setColor(Color.parseColor("#00A884")) 
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                .setPriority(NotificationCompat.PRIORITY_HIGH) 
-                .setDefaults(NotificationCompat.DEFAULT_ALL) 
-                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setAutoCancel(true)
-                .setContentIntent(openPending)
-                .setFullScreenIntent(openPending, true) // ✅ THIS FORCES THE BANNER
-                .setGroup(chatId) 
-                .addAction(replyAction); 
-
-        NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (mgr != null) {
-            mgr.notify(chatId.hashCode(), builder.build());
-        }
-        
-        if (wakeLock.isHeld()) wakeLock.release();
     }
 }
