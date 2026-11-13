@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     
-    <!-- Heads-Up Notifications -->
+    <!-- Heads-Up Notifications (Crucial for WhatsApp style) -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Call & Media -->
@@ -74,13 +74,20 @@
         <receiver android:name=".ReplyReceiver" android:exported="false" />
 
         <!-- FIREBASE NOTIFICATION CONFIGURATION -->
+        <!-- Forces Firebase to use your High Priority Channel -->
         <meta-data 
             android:name="com.google.firebase.messaging.default_notification_channel_id" 
             android:value="mofie_messages_high_v2" />
             
+        <!-- Sets the default icon for notifications -->
         <meta-data 
             android:name="com.google.firebase.messaging.default_notification_icon" 
             android:resource="@drawable/ic_stat_mofie" />
+            
+        <!-- Sets the default color for the notification icon -->
+        <meta-data 
+            android:name="com.google.firebase.messaging.default_notification_color" 
+            android:resource="@color/colorPrimary" />
 
     </application>
 </manifest>
