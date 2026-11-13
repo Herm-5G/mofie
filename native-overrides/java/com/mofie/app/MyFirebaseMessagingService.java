@@ -6,8 +6,10 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.media.AudioAttributes;
 import android.os.Build;
 import android.os.PowerManager;
+import android.provider.Settings;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.RemoteInput;
@@ -15,7 +17,6 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-    // ✅ REVERTED TO V2
     public static final String CHANNEL_ID = "mofie_messages_high_v2";
     public static final String KEY_REPLY = "mofie_reply_text";
 
@@ -38,25 +39,24 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
         wakeLock.acquire(10000);
 
-        // 1. Create the Notification Channel with HIGH importance
+        // 1. Create Channel with IMPORTANCE_HIGH (Forces Heads-Up)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager mgr = getSystemService(NotificationManager.class);
             if (mgr != null && mgr.getNotificationChannel(CHANNEL_ID) == null) {
                 NotificationChannel ch = new NotificationChannel(
                         CHANNEL_ID, 
                         "Chat Messages", 
-                        NotificationManager.IMPORTANCE_HIGH // Forces the pop-up
+                        NotificationManager.IMPORTANCE_HIGH 
                 );
                 ch.enableVibration(true); 
                 ch.setShowBadge(true);
                 ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
                 
-                // Play default phone notification sound
-                android.media.AudioAttributes audioAttributes = new android.media.AudioAttributes.Builder()
-                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .build();
-                ch.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes);
+                ch.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes);
                 
                 mgr.createNotificationChannel(ch);
             }
@@ -90,7 +90,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
         PendingIntent openPending = PendingIntent.getActivity(this, chatId.hashCode() + 1, openIntent, openFlags);
 
-        // 4. Build Notification (WhatsApp Style)
+        // 4. Build Notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_mofie)
                 .setColor(Color.parseColor("#00A884")) 
@@ -98,12 +98,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setPriority(NotificationCompat.PRIORITY_HIGH) 
-                .setDefaults(NotificationCompat.DEFAULT_ALL) // Sound & Vibration
+                .setDefaults(NotificationCompat.DEFAULT_ALL) 
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
                 .setContentIntent(openPending)
-                .setFullScreenIntent(openPending, true) // ✅ Forces the pop-up banner
+                .setFullScreenIntent(openPending, true) // ✅ THIS FORCES THE BANNER
                 .setGroup(chatId) 
                 .addAction(replyAction); 
 
