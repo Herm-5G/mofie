@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
     <!-- Core Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     
+    <!-- ✅ REQUIRED FOR WHATSAPP-STYLE POP-UP NOTIFICATIONS -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
     <!-- Call & Media Permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -13,11 +19,12 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
 
-    <!-- ✅ BACKGROUND SERVICE PERMISSIONS -->
+    <!-- ✅ BACKGROUND SERVICE PERMISSIONS (Required for Android 14+) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:allowBackup="true"
@@ -25,7 +32,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        tools:targetApi="34">
 
         <activity
             android:name=".MainActivity"
@@ -39,8 +47,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            
+            <!-- Deep Linking Support -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="herm-5g.github.io" android:pathPrefix="/mofie/" />
+            </intent-filter>
         </activity>
 
+        <!-- Firebase Messaging Service -->
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">
@@ -49,15 +66,24 @@
             </intent-filter>
         </service>
 
-        <!-- ✅ BACKGROUND SERVICE -->
+        <!-- Background Service -->
         <service
             android:name=".BackgroundService"
             android:exported="false"
-            android:foregroundServiceType="microphone|camera|phoneCall" />
+            android:foregroundServiceType="microphone|camera|phoneCall|dataSync" />
 
+        <!-- Quick Reply Receiver -->
         <receiver android:name=".ReplyReceiver" android:exported="false" />
 
-        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="mofie_messages_high_v2" />
-        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_mofie" />
+        <!-- ✅ FIREBASE NOTIFICATION CONFIGURATION -->
+        <!-- This MUST match the CHANNEL_ID in MyFirebaseMessagingService.java -->
+        <meta-data 
+            android:name="com.google.firebase.messaging.default_notification_channel_id" 
+            android:value="mofie_messages_high_v2" />
+            
+        <meta-data 
+            android:name="com.google.firebase.messaging.default_notification_icon" 
+            android:resource="@drawable/ic_stat_mofie" />
+
     </application>
 </manifest>
