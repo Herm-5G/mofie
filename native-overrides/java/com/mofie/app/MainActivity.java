@@ -16,7 +16,6 @@ public class MainActivity extends BridgeActivity {
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // ✅ Register BOTH plugins
         registerPlugin(QuickReplyPlugin.class);
         registerPlugin(FastContactsPlugin.class); 
         
@@ -24,12 +23,7 @@ public class MainActivity extends BridgeActivity {
         
         captureChatIntent(getIntent());
 
-        Intent serviceIntent = new Intent(this, BackgroundService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent);
-        } else {
-            startService(serviceIntent);
-        }
+        // ❌ DELETED THE BLOCK THAT STARTED BackgroundService HERE
     }
     
     @Override
