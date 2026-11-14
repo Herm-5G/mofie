@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════════════════
-//  MOFIE SERVICE WORKER — FIXED
+//  MOFIE SERVICE WORKER — HEADS-UP FIX
 //  Handles:
 //    • FCM background messages (data-only OR notification)
 //    • Notification click → focus existing tab or open new one
@@ -25,7 +25,7 @@ const DEFAULT_ICON = "https://res.cloudinary.com/rirfqxoz/image/upload/IMG-20261
 // If a `notification` object is present, FCM displays it automatically
 // and this handler is NOT called.
 messaging.onBackgroundMessage((payload) => {
-  console.log("[SW] background message:", payload);
+  console.log("[SW] background message received:", payload);
 
   const d = payload.data || {};
   const n = payload.notification || {};
@@ -40,9 +40,9 @@ messaging.onBackgroundMessage((payload) => {
     badge:   DEFAULT_ICON,
     tag:     chatId || "mofie-default",
     renotify: true,
-    requireInteraction: false,
-    silent:  false,
-    vibrate: [200, 100, 200],
+    requireInteraction: false, // ✅ Allows the notification to auto-dismiss
+    silent:  false,            // ✅ Ensures sound plays
+    vibrate: [200, 100, 200],  // ✅ Triggers Heads-Up vibration
     data: {
       chatId,
       senderName:  d.senderName || "Mofie",
