@@ -4,6 +4,7 @@
   "description": "Mofie App",
   "dependencies": {
     "@capacitor/android": "5.7.0",
+    "@capacitor/app": "5.0.6",
     "@capacitor/core": "5.7.0",
     "@capacitor-community/contacts": "5.1.1",
     "@capacitor/camera": "5.0.1",
