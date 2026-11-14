@@ -17,6 +17,7 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
+    // ✅ BACK TO V2
     public static final String CHANNEL_ID = "mofie_messages_high_v2";
     public static final String KEY_REPLY = "mofie_reply_text";
 
@@ -27,7 +28,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String chatId = remoteMessage.getData().get("chatId");
         String senderName = remoteMessage.getData().get("senderName");
 
-        // Fallback to notification payload if data payload is missing
         if (title == null && remoteMessage.getNotification() != null) {
             title = remoteMessage.getNotification().getTitle();
         }
@@ -43,26 +43,23 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showNotification(String title, String body, String chatId) {
-        // Acquire wake lock briefly to ensure the screen wakes up for the floating banner
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
         wakeLock.acquire(10000);
 
         try {
-            // 1. Create Channel with IMPORTANCE_HIGH (Forces Heads-Up)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationManager mgr = getSystemService(NotificationManager.class);
                 if (mgr != null && mgr.getNotificationChannel(CHANNEL_ID) == null) {
                     NotificationChannel ch = new NotificationChannel(
                             CHANNEL_ID, 
                             "Chat Messages", 
-                            NotificationManager.IMPORTANCE_HIGH 
+                            NotificationManager.IMPORTANCE_HIGH // ✅ Forces Heads-Up
                     );
                     ch.enableVibration(true); 
                     ch.setShowBadge(true);
                     ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
                     
-                    // Set the default phone notification sound
                     AudioAttributes audioAttributes = new AudioAttributes.Builder()
                             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                             .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -73,7 +70,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 }
             }
 
-            // 2. Setup "Reply" Action
             RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY).setLabel("Reply").build();
             Intent replyIntent = new Intent(this, ReplyReceiver.class);
             replyIntent.putExtra("chatId", chatId);
@@ -90,7 +86,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     .setAllowGeneratedReplies(true)
                     .build();
 
-            // 3. Setup Click Action (Open Chat)
             Intent openIntent = new Intent(this, MainActivity.class);
             openIntent.putExtra("chatId", chatId);
             openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -101,10 +96,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             }
             PendingIntent openPending = PendingIntent.getActivity(this, chatId.hashCode() + 1, openIntent, openFlags);
 
-            // 4. Build Notification
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setSmallIcon(R.drawable.ic_stat_mofie)
-                    .setColor(Color.parseColor("#00A884")) // WhatsApp Green
+                    .setColor(Color.parseColor("#00A884")) 
                     .setContentTitle(title)
                     .setContentText(body)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
@@ -114,7 +108,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setAutoCancel(true)
                     .setContentIntent(openPending)
-                    .setFullScreenIntent(openPending, true) // ✅ Forces the floating banner
+                    // ❌ NO setFullScreenIntent (This allows the Heads-Up banner to drop down natively)
                     .setGroup(chatId) 
                     .addAction(replyAction); 
 
@@ -123,7 +117,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 mgr.notify(chatId.hashCode(), builder.build());
             }
         } finally {
-            // Always release the wake lock to prevent battery drain
             if (wakeLock.isHeld()) {
                 wakeLock.release();
             }
