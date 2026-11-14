@@ -8329,3 +8329,28 @@ html, body, .app-container, .chat-window {
   height: 100dvh !important;
   overflow: hidden !important;
 }
+/* ═══════════════════════════════════════════════════════════════════════
+   FIX HEADERS OVERLAPPING WITH STATUS BAR (APK FULLSCREEN)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Push the main headers down by the exact height of the status bar */
+.header, 
+.chat-header, 
+.clean-profile-header,
+.settings-header,
+#view-chats .header {
+  padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+  min-height: calc(64px + env(safe-area-inset-top, 0px)) !important;
+  height: auto !important;
+}
+
+/* 2. Ensure the text inside the chat header stays vertically centered */
+#chat-window .chat-header > div:nth-child(3) {
+  justify-content: center !important;
+  padding-top: 0 !important;
+}
+
+/* 3. Fix the Chat Window itself so it fills the screen properly */
+.chat-window {
+  height: 100dvh !important; 
+}
