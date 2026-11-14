@@ -29,6 +29,11 @@
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"],
       "sound": "default"
+    },
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "DARK",
+      "backgroundColor": "#00000000"
     }
   }
 }
