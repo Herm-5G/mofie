@@ -17,7 +17,7 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-    // ✅ BACK TO V2
+    // ✅ Using your hardcoded v2 channel
     public static final String CHANNEL_ID = "mofie_messages_high_v2";
     public static final String KEY_REPLY = "mofie_reply_text";
 
@@ -108,7 +108,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setAutoCancel(true)
                     .setContentIntent(openPending)
-                    // ❌ NO setFullScreenIntent (This allows the Heads-Up banner to drop down natively)
                     .setGroup(chatId) 
                     .addAction(replyAction); 
 
