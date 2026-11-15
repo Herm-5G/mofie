@@ -19,7 +19,6 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import java.util.Collections;
 
 @CapacitorPlugin(name = "QuickReply")
 public class QuickReplyPlugin extends Plugin {
@@ -28,66 +27,47 @@ public class QuickReplyPlugin extends Plugin {
 
     @PluginMethod
     public void saveAuthTokens(PluginCall call) {
-        SharedPreferences.Editor edit = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit();
+        SharedPreferences.Editor edit = getContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).edit();
         if (call.getString("idToken") != null) edit.putString("idToken", call.getString("idToken"));
         if (call.getString("refreshToken") != null) edit.putString("refreshToken", call.getString("refreshToken"));
         if (call.getString("apiKey") != null) edit.putString("apiKey", call.getString("apiKey"));
         edit.apply();
-        JSObject ret = new JSObject();
-        ret.put("ok", true);
-        call.resolve(ret);
+        JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret);
     }
 
     @PluginMethod
     public void clearAuthTokens(PluginCall call) {
-        getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply();
-        JSObject ret = new JSObject();
-        ret.put("ok", true);
-        call.resolve(ret);
+        getContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).edit().clear().apply();
+        JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret);
     }
 
     @PluginMethod
     public void getFCMToken(PluginCall call) {
-        SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE);
         String cached = prefs.getString("fcmToken", null);
         com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
             JSObject ret = new JSObject();
             if (task.isSuccessful() && task.getResult() != null) {
                 String token = task.getResult();
                 prefs.edit().putString("fcmToken", token).apply();
-                ret.put("token", token);
-                call.resolve(ret);
+                ret.put("token", token); call.resolve(ret);
             } else if (cached != null) {
-                ret.put("token", cached);
-                call.resolve(ret);
-            } else {
-                call.reject("Could not get FCM token");
-            }
+                ret.put("token", cached); call.resolve(ret);
+            } else call.reject("Could not get FCM token");
         });
     }
 
     @PluginMethod
     public void requestNotificationPermission(PluginCall call) {
-        if (Build.VERSION.SDK_INT < 33) {
-            call.resolve();
-            return;
-        }
-        if (getActivity() == null) {
-            call.reject("No activity");
-            return;
-        }
-        getActivity().requestPermissions(
-                Collections.singletonList(Manifest.permission.POST_NOTIFICATIONS).toArray(new String[0]),
-                701
-        );
+        if (Build.VERSION.SDK_INT < 33) { call.resolve(); return; }
+        if (getActivity() == null) { call.reject("No activity"); return; }
+        getActivity().requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 701);
         call.resolve();
     }
 
     @PluginMethod
     public void getPendingChatId(PluginCall call) {
-        JSObject ret = new JSObject();
-        ret.put("chatId", MainActivity.consumePendingChatId());
-        call.resolve(ret);
+        JSObject ret = new JSObject(); ret.put("chatId", MainActivity.consumePendingChatId()); call.resolve(ret);
     }
 
     @PluginMethod
@@ -113,10 +93,7 @@ public class QuickReplyPlugin extends Plugin {
 
         Context ctx = getContext();
         NotificationManager mgr = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (mgr == null) {
-            call.resolve();
-            return;
-        }
+        if (mgr == null) { call.resolve(); return; }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel ch = new NotificationChannel(
@@ -124,9 +101,6 @@ public class QuickReplyPlugin extends Plugin {
                     "Chat Messages",
                     NotificationManager.IMPORTANCE_HIGH
             );
-            ch.setDescription("Incoming chat message banners");
-            ch.enableLights(true);
-            ch.setLightColor(Color.parseColor("#00A884"));
             ch.enableVibration(true);
             ch.setShowBadge(true);
             ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
@@ -140,8 +114,7 @@ public class QuickReplyPlugin extends Plugin {
         }
 
         RemoteInput remoteInput = new RemoteInput.Builder(MyFirebaseMessagingService.KEY_REPLY)
-                .setLabel("Reply")
-                .build();
+                .setLabel("Reply").build();
         Intent replyIntent = new Intent(ctx, ReplyReceiver.class);
         replyIntent.putExtra("chatId", chatId);
 
