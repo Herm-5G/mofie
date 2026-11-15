@@ -19,6 +19,7 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.util.Collections;
 
 @CapacitorPlugin(name = "QuickReply")
 public class QuickReplyPlugin extends Plugin {
@@ -75,9 +76,10 @@ public class QuickReplyPlugin extends Plugin {
             call.reject("No activity");
             return;
         }
-        String[] perms = new String[1];
-        perms[0] = Manifest.permission.POST_NOTIFICATIONS;
-        getActivity().requestPermissions(perms, 701);
+        getActivity().requestPermissions(
+                Collections.singletonList(Manifest.permission.POST_NOTIFICATIONS).toArray(new String[0]),
+                701
+        );
         call.resolve();
     }
 
@@ -116,12 +118,6 @@ public class QuickReplyPlugin extends Plugin {
             return;
         }
 
-        long[] pattern = new long[4];
-        pattern[0] = 0L;
-        pattern[1] = 250L;
-        pattern[2] = 150L;
-        pattern[3] = 250L;
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel ch = new NotificationChannel(
                     CHANNEL_ID,
@@ -132,7 +128,6 @@ public class QuickReplyPlugin extends Plugin {
             ch.enableLights(true);
             ch.setLightColor(Color.parseColor("#00A884"));
             ch.enableVibration(true);
-            ch.setVibrationPattern(pattern);
             ch.setShowBadge(true);
             ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
@@ -179,10 +174,9 @@ public class QuickReplyPlugin extends Plugin {
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
-                .setVibrate(pattern)
                 .setAutoCancel(true)
                 .setContentIntent(openPending)
                 .setGroup(chatId)
