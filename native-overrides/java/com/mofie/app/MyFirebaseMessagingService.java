@@ -17,8 +17,7 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-    // ✅ Using your hardcoded v2 channel
-    public static final String CHANNEL_ID = "mofie_messages_high_v2";
+    public static final String CHANNEL_ID = "mofie_messages_high_v3";
     public static final String KEY_REPLY = "mofie_reply_text";
 
     @Override
@@ -44,42 +43,49 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private void showNotification(String title, String body, String chatId) {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
+        PowerManager.WakeLock wakeLock = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
         wakeLock.acquire(10000);
 
         try {
+            NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (mgr == null) return;
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                NotificationManager mgr = getSystemService(NotificationManager.class);
-                if (mgr != null && mgr.getNotificationChannel(CHANNEL_ID) == null) {
-                    NotificationChannel ch = new NotificationChannel(
-                            CHANNEL_ID, 
-                            "Chat Messages", 
-                            NotificationManager.IMPORTANCE_HIGH // ✅ Forces Heads-Up
-                    );
-                    ch.enableVibration(true); 
-                    ch.setShowBadge(true);
-                    ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-                    
-                    AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                            .build();
-                    ch.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes);
-                    
-                    mgr.createNotificationChannel(ch);
-                }
+                NotificationChannel ch = new NotificationChannel(
+                        CHANNEL_ID,
+                        "Chat Messages",
+                        NotificationManager.IMPORTANCE_HIGH
+                );
+                ch.setDescription("Incoming chat message banners");
+                ch.enableLights(true);
+                ch.setLightColor(Color.parseColor("#00A884"));
+                ch.enableVibration(true);
+                ch.setVibrationPattern(new long[]{0, 250, 150, 250});
+                ch.setShowBadge(true);
+                ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
+                        .build();
+                ch.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes);
+
+                mgr.createNotificationChannel(ch);
             }
 
-            RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY).setLabel("Reply").build();
+            RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY)
+                    .setLabel("Reply")
+                    .build();
             Intent replyIntent = new Intent(this, ReplyReceiver.class);
             replyIntent.putExtra("chatId", chatId);
-            
+
             int flags = PendingIntent.FLAG_UPDATE_CURRENT;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                flags |= PendingIntent.FLAG_MUTABLE; 
+                flags |= PendingIntent.FLAG_MUTABLE;
             }
             PendingIntent replyPending = PendingIntent.getBroadcast(this, chatId.hashCode(), replyIntent, flags);
-            
+
             NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
                     R.drawable.ic_stat_mofie, "Reply", replyPending)
                     .addRemoteInput(remoteInput)
@@ -89,7 +95,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             Intent openIntent = new Intent(this, MainActivity.class);
             openIntent.putExtra("chatId", chatId);
             openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            
+
             int openFlags = PendingIntent.FLAG_UPDATE_CURRENT;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 openFlags |= PendingIntent.FLAG_IMMUTABLE;
@@ -98,23 +104,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setSmallIcon(R.drawable.ic_stat_mofie)
-                    .setColor(Color.parseColor("#00A884")) 
+                    .setColor(Color.parseColor("#00A884"))
                     .setContentTitle(title)
                     .setContentText(body)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                    .setPriority(NotificationCompat.PRIORITY_HIGH) 
-                    .setDefaults(NotificationCompat.DEFAULT_ALL) 
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
+                    .setVibrate(new long[]{0, 250, 150, 250})
                     .setAutoCancel(true)
                     .setContentIntent(openPending)
-                    .setGroup(chatId) 
-                    .addAction(replyAction); 
+                    .setGroup(chatId)
+                    .addAction(replyAction);
 
-            NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (mgr != null) {
-                mgr.notify(chatId.hashCode(), builder.build());
-            }
+            mgr.notify(chatId.hashCode(), builder.build());
         } finally {
             if (wakeLock.isHeld()) {
                 wakeLock.release();
