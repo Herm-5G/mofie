@@ -43,39 +43,33 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private void showNotification(String title, String body, String chatId) {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        PowerManager.WakeLock wakeLock = pm.newWakeLock(
-                PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
+        PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
         wakeLock.acquire(10000);
 
         try {
-            NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (mgr == null) return;
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                NotificationChannel ch = new NotificationChannel(
-                        CHANNEL_ID,
-                        "Chat Messages",
-                        NotificationManager.IMPORTANCE_HIGH
-                );
-                ch.setDescription("Incoming chat message banners");
-                ch.enableLights(true);
-                ch.setLightColor(Color.parseColor("#00A884"));
-                ch.enableVibration(true);
-                ch.setShowBadge(true);
-                ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+                NotificationManager mgr = getSystemService(NotificationManager.class);
+                if (mgr != null && mgr.getNotificationChannel(CHANNEL_ID) == null) {
+                    NotificationChannel ch = new NotificationChannel(
+                            CHANNEL_ID,
+                            "Chat Messages",
+                            NotificationManager.IMPORTANCE_HIGH
+                    );
+                    ch.enableVibration(true);
+                    ch.setShowBadge(true);
+                    ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
-                AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
-                        .build();
-                ch.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes);
+                    AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
+                            .build();
+                    ch.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes);
 
-                mgr.createNotificationChannel(ch);
+                    mgr.createNotificationChannel(ch);
+                }
             }
 
-            RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY)
-                    .setLabel("Reply")
-                    .build();
+            RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY).setLabel("Reply").build();
             Intent replyIntent = new Intent(this, ReplyReceiver.class);
             replyIntent.putExtra("chatId", chatId);
 
@@ -116,7 +110,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     .setGroup(chatId)
                     .addAction(replyAction);
 
-            mgr.notify(chatId.hashCode(), builder.build());
+            NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (mgr != null) {
+                mgr.notify(chatId.hashCode(), builder.build());
+            }
         } finally {
             if (wakeLock.isHeld()) {
                 wakeLock.release();
