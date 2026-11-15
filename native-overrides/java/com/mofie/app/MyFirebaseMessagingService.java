@@ -51,6 +51,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (mgr == null) return;
 
+            long[] pattern = new long[4];
+            pattern[0] = 0L;
+            pattern[1] = 250L;
+            pattern[2] = 150L;
+            pattern[3] = 250L;
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationChannel ch = new NotificationChannel(
                         CHANNEL_ID,
@@ -61,7 +67,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 ch.enableLights(true);
                 ch.setLightColor(Color.parseColor("#00A884"));
                 ch.enableVibration(true);
-                ch.setVibrationPattern(new long[]{0, 250, 150, 250});
+                ch.setVibrationPattern(pattern);
                 ch.setShowBadge(true);
                 ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
@@ -100,7 +106,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 openFlags |= PendingIntent.FLAG_IMMUTABLE;
             }
-            PendingIntent openPending = PendingIntent.getActivity(this, chatId.hashCode() + 1, openIntent, openFlags);
+            PendingIntent openPending = PendingIntent.getActivity(ctxOrThis(), chatId.hashCode() + 1, openIntent, openFlags);
 
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setSmallIcon(R.drawable.ic_stat_mofie)
@@ -112,7 +118,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
-                    .setVibrate(new long[]{0, 250, 150, 250})
+                    .setVibrate(pattern)
                     .setAutoCancel(true)
                     .setContentIntent(openPending)
                     .setGroup(chatId)
@@ -124,5 +130,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 wakeLock.release();
             }
         }
+    }
+
+    private Context ctxOrThis() {
+        return this;
     }
 }
