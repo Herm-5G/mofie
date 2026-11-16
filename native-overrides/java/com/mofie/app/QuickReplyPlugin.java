@@ -13,10 +13,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
-
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.RemoteInput;
-
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -33,7 +31,6 @@ public class QuickReplyPlugin extends Plugin {
         SharedPreferences.Editor edit = getContext()
                 .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit();
-
         if (call.getString("idToken") != null) {
             edit.putString("idToken", call.getString("idToken"));
         }
@@ -43,7 +40,6 @@ public class QuickReplyPlugin extends Plugin {
         if (call.getString("apiKey") != null) {
             edit.putString("apiKey", call.getString("apiKey"));
         }
-
         edit.apply();
 
         JSObject ret = new JSObject();
@@ -66,15 +62,13 @@ public class QuickReplyPlugin extends Plugin {
 
     @PluginMethod
     public void getFCMToken(PluginCall call) {
-        SharedPreferences prefs =
-                getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String cached = prefs.getString("fcmToken", null);
 
         com.google.firebase.messaging.FirebaseMessaging.getInstance()
                 .getToken()
                 .addOnCompleteListener(task -> {
                     JSObject ret = new JSObject();
-
                     if (task.isSuccessful() && task.getResult() != null) {
                         String token = task.getResult();
                         prefs.edit().putString("fcmToken", token).apply();
@@ -95,17 +89,11 @@ public class QuickReplyPlugin extends Plugin {
             call.resolve();
             return;
         }
-
         if (getActivity() == null) {
             call.reject("No activity");
             return;
         }
-
-        getActivity().requestPermissions(
-                new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                701
-        );
-
+        getActivity().requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 701);
         call.resolve();
     }
 
@@ -133,7 +121,6 @@ public class QuickReplyPlugin extends Plugin {
                 getContext().startActivity(intent);
             }
         } catch (Exception ignored) {}
-
         call.resolve();
     }
 
@@ -141,21 +128,16 @@ public class QuickReplyPlugin extends Plugin {
     public void requestBatteryOptimizationExemption(PluginCall call) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PowerManager pm =
-                        (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
-
+                PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
                 String pkg = getContext().getPackageName();
-
                 if (pm != null && !pm.isIgnoringBatteryOptimizations(pkg)) {
-                    Intent intent =
-                            new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
                     intent.setData(Uri.parse("package:" + pkg));
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     getContext().startActivity(intent);
                 }
             }
         } catch (Exception ignored) {}
-
         call.resolve();
     }
 
@@ -166,9 +148,7 @@ public class QuickReplyPlugin extends Plugin {
         String chatId = call.getString("chatId", "default");
 
         Context ctx = getContext();
-        NotificationManager mgr =
-                (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
-
+        NotificationManager mgr = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (mgr == null) {
             call.resolve();
             return;
@@ -193,16 +173,13 @@ public class QuickReplyPlugin extends Plugin {
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                     .build();
-
             ch.setSound(defaultSound, attr);
             mgr.createNotificationChannel(ch);
         }
 
-        RemoteInput remoteInput =
-                new RemoteInput.Builder(MyFirebaseMessagingService.KEY_REPLY)
-                        .setLabel("Reply")
-                        .build();
-
+        RemoteInput remoteInput = new RemoteInput.Builder(MyFirebaseMessagingService.KEY_REPLY)
+                .setLabel("Reply")
+                .build();
         Intent replyIntent = new Intent(ctx, ReplyReceiver.class);
         replyIntent.putExtra("chatId", chatId);
 
@@ -210,54 +187,38 @@ public class QuickReplyPlugin extends Plugin {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flags |= PendingIntent.FLAG_MUTABLE;
         }
+        PendingIntent replyPending = PendingIntent.getBroadcast(ctx, chatId.hashCode(), replyIntent, flags);
 
-        PendingIntent replyPending =
-                PendingIntent.getBroadcast(ctx, chatId.hashCode(), replyIntent, flags);
-
-        NotificationCompat.Action replyAction =
-                new NotificationCompat.Action.Builder(
-                        R.drawable.ic_stat_mofie,
-                        "Reply",
-                        replyPending
-                )
-                        .addRemoteInput(remoteInput)
-                        .setAllowGeneratedReplies(true)
-                        .build();
+        NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
+                R.drawable.ic_stat_mofie, "Reply", replyPending)
+                .addRemoteInput(remoteInput)
+                .setAllowGeneratedReplies(true)
+                .build();
 
         Intent openIntent = new Intent(ctx, MainActivity.class);
         openIntent.putExtra("chatId", chatId);
-        openIntent.setFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK |
-                Intent.FLAG_ACTIVITY_CLEAR_TOP
-        );
+        openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         int openFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             openFlags |= PendingIntent.FLAG_IMMUTABLE;
         }
+        PendingIntent openPending = PendingIntent.getActivity(ctx, chatId.hashCode() + 1, openIntent, openFlags);
 
-        PendingIntent openPending = PendingIntent.getActivity(
-                ctx,
-                chatId.hashCode() + 1,
-                openIntent,
-                openFlags
-        );
-
-        NotificationCompat.Builder builder =
-                new NotificationCompat.Builder(ctx, CHANNEL_ID)
-                        .setSmallIcon(R.drawable.ic_stat_mofie)
-                        .setColor(Color.parseColor("#00A884"))
-                        .setContentTitle(title)
-                        .setContentText(body)
-                        .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                        .setPriority(NotificationCompat.PRIORITY_MAX)
-                        .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-                        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                        .setSound(defaultSound)
-                        .setAutoCancel(true)
-                        .setContentIntent(openPending)
-                        .setGroup(chatId)
-                        .addAction(replyAction);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_mofie)
+                .setColor(Color.parseColor("#00A884"))
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setSound(defaultSound)
+                .setAutoCancel(true)
+                .setContentIntent(openPending)
+                .setGroup(chatId)
+                .addAction(replyAction);
 
         mgr.notify(chatId.hashCode(), builder.build());
         call.resolve();
