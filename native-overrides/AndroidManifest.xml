@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mofie.app">
 
     <!-- Network & Media -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -56,14 +57,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Background Survival Service -->
         <service
             android:name=".BackgroundService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="remoteMessaging|phoneCall" />
 
-        <!-- Firebase Cloud Messaging -->
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">
@@ -72,7 +71,6 @@
             </intent-filter>
         </service>
 
-        <!-- Inline Notification Reply Receiver -->
         <receiver
             android:name=".ReplyReceiver"
             android:enabled="true"
