@@ -41,7 +41,8 @@ jobs:
         fi
         npx cap sync android
 
-    # 1. Generate base icons from your root icon.png (ensures older Android launchers have PNG fallbacks)
+    # 1. Generate base icons from your root icon.png
+    # Make sure icon.png is in the root of your repository!
     - name: Generate Base App Icons & Splash
       run: |
         mkdir -p assets
@@ -50,15 +51,25 @@ jobs:
         cp icon.png assets/splash-dark.png
         npx @capacitor/assets generate --android --iconBackgroundColor '#000000' --iconBackgroundColorDark '#000000' --splashBackgroundColor '#000000'
 
-    # 2. Overlay your custom Native Files (Overwrites styles.xml and uses your XML splash)
+    # 2. Purge conflicting adaptive icon folders (CRITICAL FIX for generic icon)
+    - name: Purge conflicting assets
+      run: |
+        rm -rf android/app/src/main/res/mipmap-anydpi-v26
+        rm -rf android/app/src/main/res/mipmap-anydpi-v31
+
+    # 3. Overlay your custom Native Files (styles.xml, splash_centered.xml, etc.)
     - name: Overlay Custom Native Files
       run: |
         cp -r native-overrides/. android/app/src/main/
-        echo "Injected Native Files:"
+        echo "=== VERIFYING INJECTED NATIVE FILES ==="
+        echo "--- Drawable Folder ---"
         ls -la android/app/src/main/res/drawable/
+        echo "--- Values Folder ---"
         ls -la android/app/src/main/res/values/
+        echo "--- Mipmap-anydpi-v26 Folder ---"
+        ls -la android/app/src/main/res/mipmap-anydpi-v26/
 
-    # 3. Add Firebase AND SplashScreen Dependencies (Fixes the AAPT2 crash)
+    # 4. Add Firebase AND SplashScreen Dependencies
     - name: Add Dependencies to build.gradle
       run: |
         sed -i "/dependencies {/a \    implementation platform('com.google.firebase:firebase-bom:32.7.0')\n    implementation 'com.google.firebase:firebase-messaging'\n    implementation 'androidx.core:core-splashscreen:1.0.1'" android/app/build.gradle
@@ -90,7 +101,7 @@ jobs:
           echo "✅ google-services.json created successfully."
         fi
 
-    # 4. Build the APK
+    # 5. Build the APK
     - name: Build APK
       run: |
         cd android
