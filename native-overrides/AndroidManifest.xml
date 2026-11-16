@@ -52,17 +52,28 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="herm-5g.github.io" android:pathPrefix="/mofie/" />
+                <data
+                    android:scheme="https"
+                    android:host="herm-5g.github.io"
+                    android:pathPrefix="/mofie/" />
             </intent-filter>
         </activity>
 
-        <service android:name=".MyFirebaseMessagingService" android:exported="false">
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
 
-        <receiver android:name=".ReplyReceiver" android:exported="false" />
+        <service
+            android:name=".BackgroundService"
+            android:exported="false" />
+
+        <receiver
+            android:name=".ReplyReceiver"
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
