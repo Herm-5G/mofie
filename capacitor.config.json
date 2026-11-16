@@ -16,11 +16,11 @@
     "webContentsDebuggingEnabled": true
   },
   "plugins": {
-        "SplashScreen": {
-      "launchShowDuration": 2000,
+            "SplashScreen": {
+      "launchShowDuration": 1500,
       "launchAutoHide": true,
       "backgroundColor": "#000000",
-      "androidSplashResourceName": "splash",
+      "androidSplashResourceName": "splash_centered",
       "androidScaleType": "CENTER",
       "showSpinner": false,
       "splashFullScreen": true,
