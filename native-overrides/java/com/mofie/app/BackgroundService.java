@@ -7,7 +7,6 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
-import androidx.core.app.NotificationCompat;
 
 public class BackgroundService extends Service {
     private static final String CHANNEL_ID = "mofie_bg_service";
@@ -15,33 +14,46 @@ public class BackgroundService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        createNotificationChannel();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Mofie background service",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+
+            NotificationManager mgr = getSystemService(NotificationManager.class);
+            if (mgr != null) {
+                mgr.createNotificationChannel(channel);
+            }
+        }
+
+        Notification notification;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notification = new Notification.Builder(this, CHANNEL_ID)
+                    .setContentTitle("Mofie is running")
+                    .setContentText("Keeping messages available")
+                    .setSmallIcon(R.drawable.ic_stat_mofie)
+                    .build();
+        } else {
+            notification = new Notification.Builder(this)
+                    .setContentTitle("Mofie is running")
+                    .setContentText("Keeping messages available")
+                    .setSmallIcon(R.drawable.ic_stat_mofie)
+                    .build();
+        }
+
+        startForeground(1, notification);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Mofie is active")
-                .setContentText("Listening for messages and calls")
-                .setSmallIcon(R.drawable.ic_stat_mofie)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .build();
-
-        startForeground(1, notification);
         return START_STICKY;
     }
 
     @Override
-    public IBinder onBind(Intent intent) { return null; }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel serviceChannel = new NotificationChannel(
-                    CHANNEL_ID, "Background Service", NotificationManager.IMPORTANCE_LOW
-            );
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) manager.createNotificationChannel(serviceChannel);
-        }
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }
