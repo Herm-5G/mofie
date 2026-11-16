@@ -40,7 +40,6 @@ public class ReplyReceiver extends BroadcastReceiver {
 
                 int status = (idToken != null) ? postReply(chatId, replyText, idToken) : 401;
 
-                // Always refresh token if expired (401) or missing
                 if (status != 200 && refreshToken != null && apiKey != null) {
                     String fresh = refreshIdToken(refreshToken, apiKey);
                     if (fresh != null) {
@@ -48,7 +47,8 @@ public class ReplyReceiver extends BroadcastReceiver {
                         postReply(chatId, replyText, fresh);
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                e.printStackTrace();
             } finally {
                 pending.finish();
             }
