@@ -11,16 +11,19 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
+
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.RemoteInput;
+
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+
 import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-    public static final String CHANNEL_ID = "mofie_messages_high_v3";
-    public static final String CALL_CHANNEL_ID = "mofie_calls_high_v1";
+    public static final String CHANNEL_ID = "mofie_messages_high_v4";
+    public static final String CALL_CHANNEL_ID = "mofie_calls_high_v2";
     public static final String KEY_REPLY = "mofie_reply_text";
 
     @Override
@@ -32,6 +35,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             String callId = data.get("callId");
             String callerName = data.get("callerName");
             String callType = data.get("callType");
+
             showFullScreenCallNotification(
                     callId != null ? callId : "call",
                     callerName != null ? callerName : "Incoming Call",
@@ -48,27 +52,47 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (title == null && remoteMessage.getNotification() != null) {
             title = remoteMessage.getNotification().getTitle();
         }
+
         if (body == null && remoteMessage.getNotification() != null) {
             body = remoteMessage.getNotification().getBody();
         }
 
-        if (title == null) title = senderName != null ? senderName : "Mofie";
-        if (body == null) body = "New message";
-        if (chatId == null) chatId = "default";
+        if (title == null) {
+            title = senderName != null ? senderName : "Mofie";
+        }
+
+        if (body == null) {
+            body = "New message";
+        }
+
+        if (chatId == null) {
+            chatId = "default";
+        }
 
         showMessageNotification(title, body, chatId);
     }
 
-    private void showFullScreenCallNotification(String callId, String callerName, String callType) {
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+    private void showFullScreenCallNotification(
+            String callId,
+            String callerName,
+            String callType
+    ) {
+        PowerManager pm =
+                (PowerManager) getSystemService(Context.POWER_SERVICE);
+
         PowerManager.WakeLock wakeLock = pm.newWakeLock(
-                PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                PowerManager.FULL_WAKE_LOCK |
+                PowerManager.ACQUIRE_CAUSES_WAKEUP |
+                PowerManager.ON_AFTER_RELEASE,
                 "Mofie::IncomingCallWakeLock"
         );
+
         wakeLock.acquire(30000);
 
         try {
-            NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationManager mgr =
+                    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
             if (mgr == null) return;
 
             Uri ringtoneUri = Settings.System.DEFAULT_RINGTONE_URI;
@@ -83,12 +107,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 ch.enableLights(true);
                 ch.setLightColor(Color.parseColor("#00A884"));
                 ch.enableVibration(true);
+                ch.setVibrationPattern(new long[]{0, 800, 400, 800});
                 ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
                 AudioAttributes attr = new AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                         .build();
+
                 ch.setSound(ringtoneUri, attr);
                 mgr.createNotificationChannel(ch);
             }
@@ -105,25 +131,32 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
             }
+
             PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
-                    this, callId.hashCode(), fullScreenIntent, pendingFlags
+                    this,
+                    callId.hashCode(),
+                    fullScreenIntent,
+                    pendingFlags
             );
 
-            String label = "video".equals(callType) ? "Incoming Mofie video call" : "Incoming Mofie voice call";
+            String label = "video".equals(callType)
+                    ? "Incoming Mofie video call"
+                    : "Incoming Mofie voice call";
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CALL_CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_stat_mofie)
-                    .setColor(Color.parseColor("#00A884"))
-                    .setContentTitle(callerName)
-                    .setContentText(label)
-                    .setPriority(NotificationCompat.PRIORITY_MAX)
-                    .setCategory(NotificationCompat.CATEGORY_CALL)
-                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                    .setSound(ringtoneUri)
-                    .setOngoing(true)
-                    .setAutoCancel(true)
-                    .setFullScreenIntent(fullScreenPendingIntent, true)
-                    .setContentIntent(fullScreenPendingIntent);
+            NotificationCompat.Builder builder =
+                    new NotificationCompat.Builder(this, CALL_CHANNEL_ID)
+                            .setSmallIcon(R.drawable.ic_stat_mofie)
+                            .setColor(Color.parseColor("#00A884"))
+                            .setContentTitle(callerName)
+                            .setContentText(label)
+                            .setPriority(NotificationCompat.PRIORITY_MAX)
+                            .setCategory(NotificationCompat.CATEGORY_CALL)
+                            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                            .setSound(ringtoneUri)
+                            .setOngoing(true)
+                            .setAutoCancel(true)
+                            .setFullScreenIntent(fullScreenPendingIntent, true)
+                            .setContentIntent(fullScreenPendingIntent);
 
             mgr.notify(callId.hashCode(), builder.build());
         } finally {
@@ -134,12 +167,20 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void showMessageNotification(String title, String body, String chatId) {
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mofie::NotificationWakeLock");
+        PowerManager pm =
+                (PowerManager) getSystemService(Context.POWER_SERVICE);
+
+        PowerManager.WakeLock wakeLock = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "Mofie::NotificationWakeLock"
+        );
+
         wakeLock.acquire(10000);
 
         try {
-            NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationManager mgr =
+                    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
             if (mgr == null) return;
 
             Uri defaultSound = Settings.System.DEFAULT_NOTIFICATION_URI;
@@ -150,6 +191,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                         "Chat Messages",
                         NotificationManager.IMPORTANCE_HIGH
                 );
+                ch.enableLights(true);
+                ch.setLightColor(Color.parseColor("#00A884"));
                 ch.enableVibration(true);
                 ch.setShowBadge(true);
                 ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
@@ -158,12 +201,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .build();
-                ch.setSound(defaultSound, audioAttributes);
 
+                ch.setSound(defaultSound, audioAttributes);
                 mgr.createNotificationChannel(ch);
             }
 
-            RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY).setLabel("Reply").build();
+            RemoteInput remoteInput =
+                    new RemoteInput.Builder(KEY_REPLY)
+                            .setLabel("Reply")
+                            .build();
+
             Intent replyIntent = new Intent(this, ReplyReceiver.class);
             replyIntent.putExtra("chatId", chatId);
 
@@ -171,38 +218,58 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 flags |= PendingIntent.FLAG_MUTABLE;
             }
-            PendingIntent replyPending = PendingIntent.getBroadcast(this, chatId.hashCode(), replyIntent, flags);
 
-            NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
-                    R.drawable.ic_stat_mofie, "Reply", replyPending)
-                    .addRemoteInput(remoteInput)
-                    .setAllowGeneratedReplies(true)
-                    .build();
+            PendingIntent replyPending = PendingIntent.getBroadcast(
+                    this,
+                    chatId.hashCode(),
+                    replyIntent,
+                    flags
+            );
+
+            NotificationCompat.Action replyAction =
+                    new NotificationCompat.Action.Builder(
+                            R.drawable.ic_stat_mofie,
+                            "Reply",
+                            replyPending
+                    )
+                            .addRemoteInput(remoteInput)
+                            .setAllowGeneratedReplies(true)
+                            .build();
 
             Intent openIntent = new Intent(this, MainActivity.class);
             openIntent.putExtra("chatId", chatId);
-            openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            openIntent.setFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK |
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP
+            );
 
             int openFlags = PendingIntent.FLAG_UPDATE_CURRENT;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 openFlags |= PendingIntent.FLAG_IMMUTABLE;
             }
-            PendingIntent openPending = PendingIntent.getActivity(this, chatId.hashCode() + 1, openIntent, openFlags);
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_stat_mofie)
-                    .setColor(Color.parseColor("#00A884"))
-                    .setContentTitle(title)
-                    .setContentText(body)
-                    .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                    .setPriority(NotificationCompat.PRIORITY_MAX)
-                    .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                    .setSound(defaultSound)
-                    .setAutoCancel(true)
-                    .setContentIntent(openPending)
-                    .setGroup(chatId)
-                    .addAction(replyAction);
+            PendingIntent openPending = PendingIntent.getActivity(
+                    this,
+                    chatId.hashCode() + 1,
+                    openIntent,
+                    openFlags
+            );
+
+            NotificationCompat.Builder builder =
+                    new NotificationCompat.Builder(this, CHANNEL_ID)
+                            .setSmallIcon(R.drawable.ic_stat_mofie)
+                            .setColor(Color.parseColor("#00A884"))
+                            .setContentTitle(title)
+                            .setContentText(body)
+                            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                            .setPriority(NotificationCompat.PRIORITY_MAX)
+                            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                            .setSound(defaultSound)
+                            .setAutoCancel(true)
+                            .setContentIntent(openPending)
+                            .setGroup(chatId)
+                            .addAction(replyAction);
 
             mgr.notify(chatId.hashCode(), builder.build());
         } finally {
