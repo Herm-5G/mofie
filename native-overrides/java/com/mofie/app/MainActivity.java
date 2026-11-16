@@ -29,6 +29,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FastContactsPlugin.class);
         super.onCreate(savedInstanceState);
 
+        // Allow incoming call screen to wake device and show over lockscreen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -40,6 +41,7 @@ public class MainActivity extends BridgeActivity {
             );
         }
 
+        // Start foreground background service so system optimization doesn't kill Mofie
         try {
             Intent bgIntent = new Intent(this, BackgroundService.class);
             ContextCompat.startForegroundService(this, bgIntent);
@@ -75,13 +77,11 @@ public class MainActivity extends BridgeActivity {
 
     private void captureIntentExtras(Intent intent) {
         if (intent == null) return;
-
         if (intent.hasExtra("chatId")) {
             String cid = intent.getStringExtra("chatId");
             if (cid != null && !cid.isEmpty()) pendingChatId = cid;
             intent.removeExtra("chatId");
         }
-
         if (intent.hasExtra("incomingCallId")) {
             String callId = intent.getStringExtra("incomingCallId");
             if (callId != null && !callId.isEmpty()) pendingCallId = callId;
