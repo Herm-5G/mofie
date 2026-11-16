@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Solid Black Background -->
     <item android:drawable="@android:color/black" />
-    
-    <!-- Centered, scaled-down logo -->
     <item>
-        <!-- 30% inset means the image will take up 40% of the screen width/height -->
-        <inset android:inset="30%">
+        <inset android:inset="35%">
             <bitmap
                 android:gravity="center"
                 android:src="@drawable/splash" />
