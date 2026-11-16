@@ -41,20 +41,21 @@ jobs:
         fi
         npx cap sync android
 
-    # 🔥 1. Inject Native Java & Manifest Files
+    # 🔥 1. Inject Native Java, XML, and Image Overrides
     - name: Overlay Custom Native Files
       run: |
         cp -r native-overrides/. android/app/src/main/
         echo "Injected Native Files:"
-        ls -la android/app/src/main/java/com/mofie/app/
+        ls -la android/app/src/main/res/drawable/
+        ls -la android/app/src/main/res/values/
 
-    # 🔥 2. Add Firebase SDK Dependencies (THIS WAS MISSING)
-    - name: Add Firebase dependencies to build.gradle
+    # 🔥 2. Add Firebase AND SplashScreen Dependencies
+    - name: Add Dependencies to build.gradle
       run: |
-        # Insert Firebase dependencies right after the "dependencies {" line
-        sed -i "/dependencies {/a \    implementation platform('com.google.firebase:firebase-bom:32.7.0')\n    implementation 'com.google.firebase:firebase-messaging'" android/app/build.gradle
-        echo "Added Firebase to app/build.gradle:"
-        grep -A 2 "dependencies {" android/app/build.gradle
+        # Added androidx.core:core-splashscreen to fix the AAPT2 error
+        sed -i "/dependencies {/a \    implementation platform('com.google.firebase:firebase-bom:32.7.0')\n    implementation 'com.google.firebase:firebase-messaging'\n    implementation 'androidx.core:core-splashscreen:1.0.1'" android/app/build.gradle
+        echo "Added dependencies to app/build.gradle:"
+        grep -A 3 "dependencies {" android/app/build.gradle
 
     - name: Patch Gradle for Firebase plugin
       run: |
@@ -83,24 +84,8 @@ jobs:
           echo "✅ google-services.json created successfully."
         fi
 
-    - name: Clean old Android native icons
-      run: |
-        rm -rf android/app/src/main/res/mipmap-*
-        rm -rf android/app/src/main/res/drawable*/splash*
-
-    - name: Generate App Icons & Splash
-      run: |
-        mkdir -p assets
-        cp icon.png assets/icon.png
-        cp icon.png assets/splash.png
-        cp icon.png assets/splash-dark.png
-        npx @capacitor/assets generate --android --iconBackgroundColor '#0B141A' --iconBackgroundColorDark '#0B141A' --splashBackgroundColor '#0B141A'
-
-    - name: Verify Splash Screen Resources
-      run: |
-        if [ -z "$(find android/app/src/main/res -name 'splash*')" ]; then
-          echo "❌ ERROR: Splash screen resources were NOT generated!"; exit 1;
-        else echo "✅ Splash screen resources found!"; fi
+    # 🔥 3. The destructive steps (rm -rf) and generic asset generation are REMOVED 
+    # because you already provide perfect custom assets in native-overrides!
 
     - name: Build APK
       run: |
