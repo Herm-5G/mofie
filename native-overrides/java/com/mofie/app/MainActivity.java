@@ -1,7 +1,10 @@
 package com.mofie.app;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.WindowManager;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -25,6 +28,23 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(QuickReplyPlugin.class);
         registerPlugin(FastContactsPlugin.class);
         super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        } else {
+            getWindow().addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            );
+        }
+
+        try {
+            Intent bgIntent = new Intent(this, BackgroundService.class);
+            ContextCompat.startForegroundService(this, bgIntent);
+        } catch (Exception ignored) {}
+
         captureIntentExtras(getIntent());
     }
 
@@ -55,11 +75,13 @@ public class MainActivity extends BridgeActivity {
 
     private void captureIntentExtras(Intent intent) {
         if (intent == null) return;
+
         if (intent.hasExtra("chatId")) {
             String cid = intent.getStringExtra("chatId");
             if (cid != null && !cid.isEmpty()) pendingChatId = cid;
             intent.removeExtra("chatId");
         }
+
         if (intent.hasExtra("incomingCallId")) {
             String callId = intent.getStringExtra("incomingCallId");
             if (callId != null && !callId.isEmpty()) pendingCallId = callId;
