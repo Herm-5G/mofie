@@ -6,7 +6,14 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
@@ -15,8 +22,12 @@ import android.provider.Settings;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
+import androidx.core.graphics.drawable.IconCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
@@ -48,11 +59,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String title = data.getOrDefault("title", data.getOrDefault("senderName", "Mofie"));
         String body = data.getOrDefault("body", "New message");
         String chatId = data.getOrDefault("chatId", "default");
+        String senderPhoto = data.get("senderPhoto");
 
         if ("incoming_call".equals(kind)) {
             showIncomingCallNotification(data);
         } else {
-            showQuickReplyNotification(title, body, chatId);
+            showQuickReplyNotification(title, body, chatId, senderPhoto);
         }
     }
 
@@ -72,7 +84,38 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         } catch (Exception ignored) {}
     }
 
-    private void showQuickReplyNotification(String title, String body, String chatId) {
+    private Bitmap downloadCircularBitmap(String urlString) {
+        if (urlString == null || urlString.trim().isEmpty()) return null;
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+            conn.setDoInput(true);
+            conn.connect();
+            try (InputStream input = conn.getInputStream()) {
+                Bitmap raw = BitmapFactory.decodeStream(input);
+                if (raw == null) return null;
+
+                int size = Math.min(raw.getWidth(), raw.getHeight());
+                Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(output);
+                Paint paint = new Paint();
+                Rect rect = new Rect(0, 0, size, size);
+
+                paint.setAntiAlias(true);
+                canvas.drawARGB(0, 0, 0, 0);
+                canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint);
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                canvas.drawBitmap(raw, rect, rect, paint);
+                return output;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void showQuickReplyNotification(String title, String body, String chatId, String senderPhotoUrl) {
         NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (mgr == null) return;
 
@@ -130,7 +173,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             this, chatId.hashCode() + 1, openIntent, openFlags
         );
 
-        Person sender = new Person.Builder().setName(title).build();
+        // ✅ Download avatar & attach to Person and LargeIcon
+        Bitmap avatar = downloadCircularBitmap(senderPhotoUrl);
+        Person.Builder senderBuilder = new Person.Builder().setName(title);
+        if (avatar != null) {
+            senderBuilder.setIcon(IconCompat.createWithBitmap(avatar));
+        }
+        Person sender = senderBuilder.build();
+
         NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(sender)
             .addMessage(body, System.currentTimeMillis(), sender);
 
@@ -148,6 +198,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             .setAutoCancel(true)
             .setContentIntent(openPending)
             .addAction(replyAction);
+
+        if (avatar != null) {
+            builder.setLargeIcon(avatar);
+        }
 
         mgr.notify(chatId.hashCode(), builder.build());
     }
