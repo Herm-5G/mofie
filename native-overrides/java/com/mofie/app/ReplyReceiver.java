@@ -6,73 +6,61 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import androidx.core.app.NotificationCompat;
 import androidx.core.app.RemoteInput;
 import org.json.JSONObject;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
+import java.util.concurrent.Executors;
 
 public class ReplyReceiver extends BroadcastReceiver {
+    private static final String PREFS = "mofie_native_auth";
+    private static final String WORKER_URL = "https://workers.dev";
+    private static final String CHANNEL_ID = "mofie_messages_high_v4";
+
     @Override
     public void onReceive(Context context, Intent intent) {
-        Bundle results = RemoteInput.getResultsFromIntent(intent);
-        if (results == null) return;
-        CharSequence replyCs = results.getCharSequence(MyFirebaseMessagingService.KEY_REPLY);
-        if (replyCs == null || replyCs.length() == 0) return;
+        Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
+        if (remoteInput == null) return;
 
-        final String replyText = replyCs.toString().trim();
-        final String chatId = intent.getStringExtra("chatId");
-        if (chatId == null || replyText.isEmpty()) return;
+        CharSequence replyCharSeq = remoteInput.getCharSequence(MyFirebaseMessagingService.KEY_REPLY);
+        String chatId = intent.getStringExtra("chatId");
+        if (replyCharSeq == null || chatId == null) return;
 
-        NotificationManager mgr = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (mgr != null) mgr.cancel(chatId.hashCode());
+        String replyText = replyCharSeq.toString().trim();
+        if (replyText.isEmpty()) return;
 
-        final PendingResult pending = goAsync();
-        new Thread(() -> {
+        final PendingResult pendingResult = goAsync();
+
+        Executors.newSingleThreadExecutor().execute(() -> {
             try {
-                SharedPreferences prefs = context.getSharedPreferences("mofie_native_auth", Context.MODE_PRIVATE);
+                SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
                 String idToken = prefs.getString("idToken", null);
                 String refreshToken = prefs.getString("refreshToken", null);
                 String apiKey = prefs.getString("apiKey", null);
 
-                int status = (idToken != null) ? postReply(chatId, replyText, idToken) : 401;
-
-                if (status != 200 && refreshToken != null && apiKey != null) {
-                    String fresh = refreshIdToken(refreshToken, apiKey);
-                    if (fresh != null) {
-                        prefs.edit().putString("idToken", fresh).apply();
-                        postReply(chatId, replyText, fresh);
+                // Always refresh token in case the app was killed for over an hour
+                if (refreshToken != null && apiKey != null) {
+                    String freshToken = refreshIdToken(refreshToken, apiKey);
+                    if (freshToken != null) {
+                        idToken = freshToken;
+                        prefs.edit().putString("idToken", idToken).apply();
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                pending.finish();
-            }
-        }).start();
-    }
 
-    private int postReply(String chatId, String text, String idToken) throws Exception {
-        URL url = new URL("https://workers.dev");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setDoOutput(true);
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(10000);
-        conn.setRequestProperty("Content-Type", "application/json");
-        JSONObject body = new JSONObject();
-        body.put("idToken", idToken);
-        body.put("chatId", chatId);
-        body.put("text", text);
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-        }
-        int code = conn.getResponseCode();
-        conn.disconnect();
-        return code;
+                if (idToken != null) {
+                    boolean ok = sendToWorkerQuickReply(idToken, chatId, replyText);
+                    updateBanner(context, chatId, ok ? "You: " + replyText : "Failed to send");
+                }
+            } catch (Exception e) {
+                updateBanner(context, chatId, "Failed to send reply");
+            } finally {
+                pendingResult.finish();
+            }
+        });
     }
 
     private String refreshIdToken(String refreshToken, String apiKey) {
@@ -80,20 +68,50 @@ public class ReplyReceiver extends BroadcastReceiver {
             URL url = new URL("https://googleapis.com" + apiKey);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            String params = "grant_type=refresh_token&refresh_token=" + refreshToken;
+            conn.setDoOutput(true);
+
+            String body = "grant_type=refresh_token&refresh_token=" + refreshToken;
             try (OutputStream os = conn.getOutputStream()) {
-                os.write(params.getBytes(StandardCharsets.UTF_8));
+                os.write(body.getBytes(StandardCharsets.UTF_8));
             }
-            if (conn.getResponseCode() != 200) return null;
-            BufferedReader r = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = r.readLine()) != null) sb.append(line);
-            return new JSONObject(sb.toString()).optString("id_token", null);
-        } catch (Exception e) {
-            return null;
+
+            if (conn.getResponseCode() == 200) {
+                Scanner s = new Scanner(conn.getInputStream()).useDelimiter("\\A");
+                String resp = s.hasNext() ? s.next() : "";
+                return new JSONObject(resp).getString("id_token");
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private boolean sendToWorkerQuickReply(String idToken, String chatId, String text) throws Exception {
+        JSONObject payload = new JSONObject();
+        payload.put("idToken", idToken);
+        payload.put("chatId", chatId);
+        payload.put("text", text);
+
+        URL url = new URL(WORKER_URL + "/quick-reply");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setDoOutput(true);
+
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(payload.toString().getBytes(StandardCharsets.UTF_8));
+        }
+        return conn.getResponseCode() == 200;
+    }
+
+    private void updateBanner(Context context, String chatId, String statusText) {
+        NotificationManager mgr = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (mgr != null) {
+            NotificationCompat.Builder repliedNotif = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_mofie)
+                .setContentTitle("Mofie")
+                .setContentText(statusText)
+                .setTimeoutAfter(2000);
+            mgr.notify(chatId.hashCode(), repliedNotif.build());
         }
     }
 }
