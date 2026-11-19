@@ -1,5 +1,6 @@
 package com.mofie.app;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -33,6 +34,7 @@ import java.util.Map;
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public static final String KEY_REPLY = "key_text_reply";
     public static final String CHANNEL_ID = "mofie_messages_high_v5";
+    public static final String CALL_CHANNEL_ID = "mofie_calls_v1";
 
     private SharedPreferences getSafePrefs() {
         Context storageCtx = this;
@@ -63,6 +65,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         if ("incoming_call".equals(kind)) {
             showIncomingCallNotification(data);
+        } else if ("call_ended".equals(kind)) {
+            String callId = data.get("callId");
+            NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (mgr != null && callId != null) {
+                mgr.cancel(callId.hashCode());
+            }
         } else {
             showQuickReplyNotification(title, body, chatId, senderPhoto);
         }
@@ -79,7 +87,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     PowerManager.ON_AFTER_RELEASE,
                     "mofie:MessageWakeLock"
                 );
-                wl.acquire(4000);
+                wl.acquire(10000);
             }
         } catch (Exception ignored) {}
     }
@@ -173,7 +181,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             this, chatId.hashCode() + 1, openIntent, openFlags
         );
 
-        // ✅ Download avatar & attach to Person and LargeIcon
         Bitmap avatar = downloadCircularBitmap(senderPhotoUrl);
         Person.Builder senderBuilder = new Person.Builder().setName(title);
         if (avatar != null) {
@@ -209,28 +216,71 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private void showIncomingCallNotification(Map<String, String> data) {
         String callId = data.get("callId");
         String callerName = data.getOrDefault("callerName", "Incoming Call");
+        String callType = data.getOrDefault("callType", "voice");
         if (callId == null) return;
 
-        Intent fullScreenIntent = new Intent(this, MainActivity.class);
-        fullScreenIntent.putExtra("incomingCallId", callId);
-        fullScreenIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        PendingIntent fullScreenPending = PendingIntent.getActivity(
-            this, callId.hashCode(), fullScreenIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_mofie)
-            .setContentTitle(callerName)
-            .setContentText("Incoming Mofie call...")
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setFullScreenIntent(fullScreenPending, true)
-            .setAutoCancel(true);
-
         NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (mgr != null) mgr.notify(callId.hashCode(), builder.build());
-    }
+        if (mgr == null) return;
+
+        Uri ringtoneUri = Settings.System.DEFAULT_RINGTONE_URI;
+
+        // Dedicated Ringtone Channel using system default ringtone
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel callCh = new NotificationChannel(
+                CALL_CHANNEL_ID,
+                "Incoming Calls",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            callCh.setDescription("Incoming voice and video calls");
+            callCh.enableLights(true);
+            callCh.setLightColor(Color.parseColor("#00A884"));
+            callCh.enableVibration(true);
+            callCh.setVibrationPattern(new long[]{0, 1000, 1000});
+            callCh.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+            AudioAttributes ringAttr = new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+.setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+.build();
+callCh.setSound(ringtoneUri, ringAttr);
+mgr.createNotificationChannel(callCh);
+}
+Intent fullScreenIntent = new Intent(this, MainActivity.class);
+fullScreenIntent.putExtra("incomingCallId", callId);
+fullScreenIntent.addFlags(
+Intent.FLAG_ACTIVITY_NEW_TASK |
+Intent.FLAG_ACTIVITY_CLEAR_TOP |
+Intent.FLAG_ACTIVITY_SINGLE_TOP
+);
+PendingIntent fullScreenPending = PendingIntent.getActivity(
+this, callId.hashCode(), fullScreenIntent,
+PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+);
+String subtitle = "video".equals(callType)
+? "Incoming Mofie video call..."
+: "Incoming Mofie voice call...";
+NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CALL_CHANNEL_ID)
+.setSmallIcon(R.drawable.ic_stat_mofie)
+.setColor(Color.parseColor("#00A884"))
+.setContentTitle(callerName)
+.setContentText(subtitle)
+.setPriority(NotificationCompat.PRIORITY_MAX)
+.setCategory(NotificationCompat.CATEGORY_CALL)
+.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+.setSound(ringtoneUri)
+.setVibrate(new long[]{0, 1000, 1000})
+.setFullScreenIntent(fullScreenPending, true)
+.setContentIntent(fullScreenPending)
+.setOngoing(true)
+.setTimeoutAfter(45000)
+.setAutoCancel(true);
+Notification notif = builder.build();
+// Loops the system default ringtone continuously until answered or cancelled
+notif.flags |= Notification.FLAG_INSISTENT;
+mgr.notify(callId.hashCode(), notif);
+// Immediately bring MainActivity to foreground on screen
+try {
+startActivity(fullScreenIntent);
+} catch (Exception ignored) {}
+}
 }
