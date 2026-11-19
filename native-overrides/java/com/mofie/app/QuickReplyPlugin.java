@@ -26,11 +26,17 @@ public class QuickReplyPlugin extends Plugin {
     private static final String PREFS = "mofie_native_auth";
     private static final String CHANNEL_ID = "mofie_messages_high_v5";
 
+    private SharedPreferences getSafePrefs() {
+        Context storageCtx = getContext();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            storageCtx = storageCtx.createDeviceProtectedStorageContext();
+        }
+        return storageCtx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    }
+
     @PluginMethod
     public void saveAuthTokens(PluginCall call) {
-        SharedPreferences.Editor edit = getContext()
-                .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit();
+        SharedPreferences.Editor edit = getSafePrefs().edit();
         if (call.getString("idToken") != null) {
             edit.putString("idToken", call.getString("idToken"));
         }
@@ -49,11 +55,7 @@ public class QuickReplyPlugin extends Plugin {
 
     @PluginMethod
     public void clearAuthTokens(PluginCall call) {
-        getContext()
-                .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .clear()
-                .apply();
+        getSafePrefs().edit().clear().apply();
 
         JSObject ret = new JSObject();
         ret.put("ok", true);
@@ -62,7 +64,7 @@ public class QuickReplyPlugin extends Plugin {
 
     @PluginMethod
     public void getFCMToken(PluginCall call) {
-        SharedPreferences prefs = getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getSafePrefs();
         String cached = prefs.getString("fcmToken", null);
 
         com.google.firebase.messaging.FirebaseMessaging.getInstance()
@@ -184,9 +186,9 @@ public class QuickReplyPlugin extends Plugin {
         replyIntent.putExtra("chatId", chatId);
 
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-    flags |= PendingIntent.FLAG_MUTABLE;
-}
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            flags |= PendingIntent.FLAG_MUTABLE;
+        }
 
         PendingIntent replyPending = PendingIntent.getBroadcast(ctx, chatId.hashCode(), replyIntent, flags);
 
