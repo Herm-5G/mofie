@@ -184,9 +184,10 @@ public class QuickReplyPlugin extends Plugin {
         replyIntent.putExtra("chatId", chatId);
 
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flags |= PendingIntent.FLAG_MUTABLE;
-        }
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    flags |= PendingIntent.FLAG_MUTABLE;
+}
+
         PendingIntent replyPending = PendingIntent.getBroadcast(ctx, chatId.hashCode(), replyIntent, flags);
 
         NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
