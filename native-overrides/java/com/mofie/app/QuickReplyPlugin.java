@@ -114,6 +114,20 @@ public class QuickReplyPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void cancelCallNotification(PluginCall call) {
+        String callId = call.getString("callId");
+        NotificationManager mgr = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        if (mgr != null) {
+            if (callId != null && !callId.isEmpty()) {
+                mgr.cancel(callId.hashCode());
+            } else {
+                mgr.cancelAll();
+            }
+        }
+        call.resolve();
+    }
+
+    @PluginMethod
     public void requestFullScreenIntent(PluginCall call) {
         try {
             if (Build.VERSION.SDK_INT >= 34) {
@@ -202,10 +216,7 @@ public class QuickReplyPlugin extends Plugin {
         openIntent.putExtra("chatId", chatId);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-        int openFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            openFlags |= PendingIntent.FLAG_IMMUTABLE;
-        }
+        int openFlags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
         PendingIntent openPending = PendingIntent.getActivity(ctx, chatId.hashCode() + 1, openIntent, openFlags);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, CHANNEL_ID)
