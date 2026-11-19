@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.net.Uri;
@@ -12,6 +13,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -21,13 +23,18 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public static final String KEY_REPLY = "key_text_reply";
     public static final String CHANNEL_ID = "mofie_messages_high_v5";
 
+    private SharedPreferences getSafePrefs() {
+        Context storageCtx = this;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            storageCtx = createDeviceProtectedStorageContext();
+        }
+        return storageCtx.getSharedPreferences("mofie_native_auth", Context.MODE_PRIVATE);
+    }
+
     @Override
     public void onNewToken(String token) {
         super.onNewToken(token);
-        getSharedPreferences("mofie_native_auth", Context.MODE_PRIVATE)
-            .edit()
-            .putString("fcmToken", token)
-            .apply();
+        getSafePrefs().edit().putString("fcmToken", token).apply();
     }
 
     @Override
@@ -55,12 +62,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (pm != null && !pm.isInteractive()) {
                 @SuppressWarnings("deprecation")
                 PowerManager.WakeLock wl = pm.newWakeLock(
-                    PowerManager.FULL_WAKE_LOCK |
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK |
                     PowerManager.ACQUIRE_CAUSES_WAKEUP |
                     PowerManager.ON_AFTER_RELEASE,
                     "mofie:MessageWakeLock"
                 );
-                wl.acquire(5000);
+                wl.acquire(4000);
             }
         } catch (Exception ignored) {}
     }
@@ -75,7 +82,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             NotificationChannel ch = new NotificationChannel(
                 CHANNEL_ID,
                 "Chat Messages",
-                NotificationManager.IMPORTANCE_MAX
+                NotificationManager.IMPORTANCE_HIGH
             );
             ch.setDescription("Instant chat message alerts");
             ch.enableLights(true);
@@ -123,12 +130,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             this, chatId.hashCode() + 1, openIntent, openFlags
         );
 
+        Person sender = new Person.Builder().setName(title).build();
+        NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(sender)
+            .addMessage(body, System.currentTimeMillis(), sender);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_mofie)
             .setColor(Color.parseColor("#00A884"))
             .setContentTitle(title)
             .setContentText(body)
-            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+            .setStyle(style)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
