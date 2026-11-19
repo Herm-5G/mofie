@@ -19,7 +19,7 @@ import java.util.concurrent.Executors;
 public class ReplyReceiver extends BroadcastReceiver {
     private static final String PREFS = "mofie_native_auth";
     private static final String WORKER_URL = "https://workers.dev";
-    private static final String CHANNEL_ID = "mofie_messages_high_v4";
+    private static final String CHANNEL_ID = "mofie_messages_high_v5";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -54,6 +54,8 @@ public class ReplyReceiver extends BroadcastReceiver {
                 if (idToken != null) {
                     boolean ok = sendToWorkerQuickReply(idToken, chatId, replyText);
                     updateBanner(context, chatId, ok ? "You: " + replyText : "Failed to send");
+                } else {
+                    updateBanner(context, chatId, "Open Mofie once to sync quick reply");
                 }
             } catch (Exception e) {
                 updateBanner(context, chatId, "Failed to send reply");
@@ -110,7 +112,7 @@ public class ReplyReceiver extends BroadcastReceiver {
                 .setSmallIcon(R.drawable.ic_stat_mofie)
                 .setContentTitle("Mofie")
                 .setContentText(statusText)
-                .setTimeoutAfter(2000);
+                .setTimeoutAfter(1500);
             mgr.notify(chatId.hashCode(), repliedNotif.build());
         }
     }
