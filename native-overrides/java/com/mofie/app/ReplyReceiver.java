@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.RemoteInput;
@@ -18,7 +19,8 @@ import java.util.concurrent.Executors;
 
 public class ReplyReceiver extends BroadcastReceiver {
     private static final String PREFS = "mofie_native_auth";
-    private static final String WORKER_URL = "https://workers.dev";
+    // FIXED: Point to your actual Cloudflare Worker URL
+    private static final String WORKER_URL = "https://mofie-api.hermanedaru.workers.dev";
     private static final String CHANNEL_ID = "mofie_messages_high_v5";
 
     @Override
@@ -33,11 +35,20 @@ public class ReplyReceiver extends BroadcastReceiver {
         String replyText = replyCharSeq.toString().trim();
         if (replyText.isEmpty()) return;
 
+        // Immediately update the notification to show "Sending..."
+        updateBanner(context, chatId, "Sending...");
+
         final PendingResult pendingResult = goAsync();
 
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
-                SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+                // FIXED: Use device-protected storage so it works when directBootAware
+                Context storageCtx = context;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    storageCtx = context.createDeviceProtectedStorageContext();
+                }
+                SharedPreferences prefs = storageCtx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+
                 String idToken = prefs.getString("idToken", null);
                 String refreshToken = prefs.getString("refreshToken", null);
                 String apiKey = prefs.getString("apiKey", null);
@@ -58,6 +69,7 @@ public class ReplyReceiver extends BroadcastReceiver {
                     updateBanner(context, chatId, "Open Mofie once to sync quick reply");
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 updateBanner(context, chatId, "Failed to send reply");
             } finally {
                 pendingResult.finish();
@@ -67,7 +79,8 @@ public class ReplyReceiver extends BroadcastReceiver {
 
     private String refreshIdToken(String refreshToken, String apiKey) {
         try {
-            URL url = new URL("https://googleapis.com" + apiKey);
+            // FIXED: Correct Google Secure Token URL
+            URL url = new URL("https://securetoken.googleapis.com/v1/token?key=" + apiKey);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
@@ -81,9 +94,12 @@ public class ReplyReceiver extends BroadcastReceiver {
             if (conn.getResponseCode() == 200) {
                 Scanner s = new Scanner(conn.getInputStream()).useDelimiter("\\A");
                 String resp = s.hasNext() ? s.next() : "";
-                return new JSONObject(resp).getString("id_token");
+                // FIXED: Google returns "access_token" for refreshed ID tokens, not "id_token"
+                return new JSONObject(resp).getString("access_token"); 
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -102,7 +118,16 @@ public class ReplyReceiver extends BroadcastReceiver {
         try (OutputStream os = conn.getOutputStream()) {
             os.write(payload.toString().getBytes(StandardCharsets.UTF_8));
         }
-        return conn.getResponseCode() == 200;
+        
+        int responseCode = conn.getResponseCode();
+        if (responseCode != 200) {
+             // Print error stream for debugging
+             Scanner s = new Scanner(conn.getErrorStream()).useDelimiter("\\A");
+             String err = s.hasNext() ? s.next() : "";
+             System.out.println("Worker Error: " + err);
+        }
+        
+        return responseCode == 200;
     }
 
     private void updateBanner(Context context, String chatId, String statusText) {
@@ -112,7 +137,7 @@ public class ReplyReceiver extends BroadcastReceiver {
                 .setSmallIcon(R.drawable.ic_stat_mofie)
                 .setContentTitle("Mofie")
                 .setContentText(statusText)
-                .setTimeoutAfter(1500);
+                .setTimeoutAfter(3000); // Give the user 3 seconds to see it
             mgr.notify(chatId.hashCode(), repliedNotif.build());
         }
     }
