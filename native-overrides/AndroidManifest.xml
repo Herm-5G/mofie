@@ -75,12 +75,14 @@
             android:exported="false" />
 
         <receiver
-            android:name=".ReplyReceiver"
-            android:exported="false" />
+    android:name=".ReplyReceiver"
+    android:directBootAware="true"
+    android:exported="false" />
 
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="mofie_messages_high_v4" />
+<meta-data
+    android:name="com.google.firebase.messaging.default_notification_channel_id"
+    android:value="mofie_messages_high_v5" />
+
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_stat_mofie" />
