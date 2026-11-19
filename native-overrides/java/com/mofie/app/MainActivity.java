@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
-import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -29,7 +28,12 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FastContactsPlugin.class);
         super.onCreate(savedInstanceState);
 
-        // Allow incoming call screen to wake device and show over lockscreen
+        // Stop legacy persistent notification service if running
+        try {
+            stopService(new Intent(this, BackgroundService.class));
+        } catch (Exception ignored) {}
+
+        // Allow incoming call / alert screen to wake device and show over lockscreen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -40,12 +44,6 @@ public class MainActivity extends BridgeActivity {
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             );
         }
-
-        // Start foreground background service so system optimization doesn't kill Mofie
-        try {
-            Intent bgIntent = new Intent(this, BackgroundService.class);
-            ContextCompat.startForegroundService(this, bgIntent);
-        } catch (Exception ignored) {}
 
         captureIntentExtras(getIntent());
     }
