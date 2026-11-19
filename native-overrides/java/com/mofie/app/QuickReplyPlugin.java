@@ -24,7 +24,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "QuickReply")
 public class QuickReplyPlugin extends Plugin {
     private static final String PREFS = "mofie_native_auth";
-    private static final String CHANNEL_ID = "mofie_messages_high_v4";
+    private static final String CHANNEL_ID = "mofie_messages_high_v5";
 
     @PluginMethod
     public void saveAuthTokens(PluginCall call) {
