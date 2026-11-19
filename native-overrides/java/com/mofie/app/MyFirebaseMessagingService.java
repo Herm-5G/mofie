@@ -19,14 +19,22 @@ import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public static final String KEY_REPLY = "key_text_reply";
-    private static final String CHANNEL_ID = "mofie_messages_high_v4";
+    public static final String CHANNEL_ID = "mofie_messages_high_v5";
+
+    @Override
+    public void onNewToken(String token) {
+        super.onNewToken(token);
+        getSharedPreferences("mofie_native_auth", Context.MODE_PRIVATE)
+            .edit()
+            .putString("fcmToken", token)
+            .apply();
+    }
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         Map<String, String> data = remoteMessage.getData();
         if (data.isEmpty()) return;
 
-        // 1. Wake the phone screen immediately
         wakeScreen();
 
         String kind = data.get("kind");
@@ -42,17 +50,19 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void wakeScreen() {
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        if (pm != null && !pm.isInteractive()) {
-            @SuppressWarnings("deprecation")
-            PowerManager.WakeLock wl = pm.newWakeLock(
-                PowerManager.FULL_WAKE_LOCK |
-                PowerManager.ACQUIRE_CAUSES_WAKEUP |
-                PowerManager.ON_AFTER_RELEASE,
-                "mofie:NotificationWakeLock"
-            );
-            wl.acquire(4000); // Keep screen awake for 4 seconds
-        }
+        try {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null && !pm.isInteractive()) {
+                @SuppressWarnings("deprecation")
+                PowerManager.WakeLock wl = pm.newWakeLock(
+                    PowerManager.FULL_WAKE_LOCK |
+                    PowerManager.ACQUIRE_CAUSES_WAKEUP |
+                    PowerManager.ON_AFTER_RELEASE,
+                    "mofie:MessageWakeLock"
+                );
+                wl.acquire(5000);
+            }
+        } catch (Exception ignored) {}
     }
 
     private void showQuickReplyNotification(String title, String body, String chatId) {
@@ -65,12 +75,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             NotificationChannel ch = new NotificationChannel(
                 CHANNEL_ID,
                 "Chat Messages",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_MAX
             );
-            ch.setDescription("Incoming chat message banners");
+            ch.setDescription("Instant chat message alerts");
             ch.enableLights(true);
             ch.setLightColor(Color.parseColor("#00A884"));
             ch.enableVibration(true);
+            ch.setVibrationPattern(new long[]{0, 250, 150, 250});
+            ch.setShowBadge(true);
             ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             AudioAttributes attr = new AudioAttributes.Builder()
@@ -81,7 +93,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             mgr.createNotificationChannel(ch);
         }
 
-        // Inline Quick Reply Action
         RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY)
             .setLabel("Reply to " + title + "...")
             .build();
@@ -91,7 +102,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         int replyFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            replyFlags |= PendingIntent.FLAG_MUTABLE; // Required on Android 12+ for RemoteInput
+            replyFlags |= PendingIntent.FLAG_MUTABLE;
         }
         PendingIntent replyPending = PendingIntent.getBroadcast(
             this, chatId.hashCode(), replyIntent, replyFlags
@@ -103,7 +114,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             .setAllowGeneratedReplies(true)
             .build();
 
-        // Tap Banner to Open Chat
         Intent openIntent = new Intent(this, MainActivity.class);
         openIntent.putExtra("chatId", chatId);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -134,6 +144,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private void showIncomingCallNotification(Map<String, String> data) {
         String callId = data.get("callId");
         String callerName = data.getOrDefault("callerName", "Incoming Call");
+        if (callId == null) return;
 
         Intent fullScreenIntent = new Intent(this, MainActivity.class);
         fullScreenIntent.putExtra("incomingCallId", callId);
