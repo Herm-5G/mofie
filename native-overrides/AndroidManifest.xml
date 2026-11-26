@@ -15,6 +15,8 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:allowBackup="true"
@@ -60,29 +62,32 @@
             </intent-filter>
         </activity>
 
-      <service
-    android:name=".MyFirebaseMessagingService"
-    android:directBootAware="true"
-    android:exported="false">
-    <intent-filter>
-        <action android:name="com.google.firebase.MESSAGING_EVENT" />
-    </intent-filter>
-</service>
-
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:directBootAware="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <service
-            android:name=".BackgroundService"
-            android:exported="false" />
+            android:name=".CallForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall" />
 
         <receiver
-    android:name=".ReplyReceiver"
-    android:directBootAware="true"
-    android:exported="false" />
+            android:name=".ReplyReceiver"
+            android:directBootAware="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.mofie.app.QUICK_REPLY" />
+            </intent-filter>
+        </receiver>
 
-<meta-data
-    android:name="com.google.firebase.messaging.default_notification_channel_id"
-    android:value="mofie_messages_high_v5" />
-
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="mofie_messages_high_v5" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_stat_mofie" />
