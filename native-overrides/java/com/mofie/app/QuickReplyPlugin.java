@@ -34,101 +34,94 @@ public class QuickReplyPlugin extends Plugin {
         return storageCtx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
-    @PluginMethod
-    public void saveAuthTokens(PluginCall call) {
+    @PluginMethod public void saveAuthTokens(PluginCall call) {
         SharedPreferences.Editor edit = getSafePrefs().edit();
-        if (call.getString("idToken") != null) {
-            edit.putString("idToken", call.getString("idToken"));
-        }
-        if (call.getString("refreshToken") != null) {
-            edit.putString("refreshToken", call.getString("refreshToken"));
-        }
-        if (call.getString("apiKey") != null) {
-            edit.putString("apiKey", call.getString("apiKey"));
-        }
+        if (call.getString("idToken")      != null) edit.putString("idToken",      call.getString("idToken"));
+        if (call.getString("refreshToken") != null) edit.putString("refreshToken", call.getString("refreshToken"));
+        if (call.getString("apiKey")       != null) edit.putString("apiKey",       call.getString("apiKey"));
         edit.apply();
-
-        JSObject ret = new JSObject();
-        ret.put("ok", true);
-        call.resolve(ret);
+        JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret);
     }
 
-    @PluginMethod
-    public void clearAuthTokens(PluginCall call) {
+    @PluginMethod public void clearAuthTokens(PluginCall call) {
         getSafePrefs().edit().clear().apply();
-
-        JSObject ret = new JSObject();
-        ret.put("ok", true);
-        call.resolve(ret);
+        JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret);
     }
 
-    @PluginMethod
-    public void getFCMToken(PluginCall call) {
+    @PluginMethod public void getFCMToken(PluginCall call) {
         SharedPreferences prefs = getSafePrefs();
         String cached = prefs.getString("fcmToken", null);
 
-        com.google.firebase.messaging.FirebaseMessaging.getInstance()
-                .getToken()
-                .addOnCompleteListener(task -> {
-                    JSObject ret = new JSObject();
-                    if (task.isSuccessful() && task.getResult() != null) {
-                        String token = task.getResult();
-                        prefs.edit().putString("fcmToken", token).apply();
-                        ret.put("token", token);
-                        call.resolve(ret);
-                    } else if (cached != null) {
-                        ret.put("token", cached);
-                        call.resolve(ret);
-                    } else {
-                        call.reject("Could not get FCM token");
-                    }
-                });
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+            .addOnCompleteListener(task -> {
+                JSObject ret = new JSObject();
+                if (task.isSuccessful() && task.getResult() != null) {
+                    String token = task.getResult();
+                    prefs.edit().putString("fcmToken", token).apply();
+                    ret.put("token", token);
+                } else if (cached != null) {
+                    ret.put("token", cached);
+                } else {
+                    call.reject("Could not get FCM token");
+                    return;
+                }
+                call.resolve(ret);
+            });
     }
 
-    @PluginMethod
-    public void requestNotificationPermission(PluginCall call) {
-        if (Build.VERSION.SDK_INT < 33) {
-            call.resolve();
-            return;
-        }
-        if (getActivity() == null) {
-            call.reject("No activity");
-            return;
-        }
+    @PluginMethod public void requestNotificationPermission(PluginCall call) {
+        if (Build.VERSION.SDK_INT < 33) { call.resolve(); return; }
+        if (getActivity() == null) { call.reject("No activity"); return; }
         getActivity().requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 701);
         call.resolve();
     }
 
-    @PluginMethod
-    public void getPendingChatId(PluginCall call) {
+    @PluginMethod public void hasOverlayPermission(PluginCall call) {
+        JSObject ret = new JSObject();
+        boolean granted = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            granted = Settings.canDrawOverlays(getContext());
+        }
+        ret.put("granted", granted);
+        call.resolve(ret);
+    }
+
+    @PluginMethod public void requestOverlayPermission(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                    && !Settings.canDrawOverlays(getContext())) {
+                Intent i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getContext().getPackageName()));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+            }
+        } catch (Exception ignored) {}
+        call.resolve();
+    }
+
+    @PluginMethod public void getPendingChatId(PluginCall call) {
         JSObject ret = new JSObject();
         ret.put("chatId", MainActivity.consumePendingChatId());
         call.resolve(ret);
     }
 
-    @PluginMethod
-    public void getPendingCallId(PluginCall call) {
+    @PluginMethod public void getPendingCallId(PluginCall call) {
         JSObject ret = new JSObject();
         ret.put("callId", MainActivity.consumePendingCallId());
         call.resolve(ret);
     }
 
-    @PluginMethod
-    public void cancelCallNotification(PluginCall call) {
+    @PluginMethod public void cancelCallNotification(PluginCall call) {
         String callId = call.getString("callId");
         NotificationManager mgr = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
         if (mgr != null) {
-            if (callId != null && !callId.isEmpty()) {
-                mgr.cancel(callId.hashCode());
-            } else {
-                mgr.cancelAll();
-            }
+            if (callId != null && !callId.isEmpty()) mgr.cancel(callId.hashCode());
+            else mgr.cancelAll();
         }
         call.resolve();
     }
 
-    @PluginMethod
-    public void requestFullScreenIntent(PluginCall call) {
+    @PluginMethod public void requestFullScreenIntent(PluginCall call) {
         try {
             if (Build.VERSION.SDK_INT >= 34) {
                 Intent intent = new Intent("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT");
@@ -140,8 +133,7 @@ public class QuickReplyPlugin extends Plugin {
         call.resolve();
     }
 
-    @PluginMethod
-    public void requestBatteryOptimizationExemption(PluginCall call) {
+    @PluginMethod public void requestBatteryOptimizationExemption(PluginCall call) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
@@ -157,27 +149,20 @@ public class QuickReplyPlugin extends Plugin {
         call.resolve();
     }
 
-    @PluginMethod
-    public void showHeadsUp(PluginCall call) {
-        String title = call.getString("title", "Mofie");
-        String body = call.getString("body", "New message");
+    @PluginMethod public void showHeadsUp(PluginCall call) {
+        String title  = call.getString("title", "Mofie");
+        String body   = call.getString("body", "New message");
         String chatId = call.getString("chatId", "default");
 
         Context ctx = getContext();
         NotificationManager mgr = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (mgr == null) {
-            call.resolve();
-            return;
-        }
+        if (mgr == null) { call.resolve(); return; }
 
         Uri defaultSound = Settings.System.DEFAULT_NOTIFICATION_URI;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel ch = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Chat Messages",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
+                CHANNEL_ID, "Chat Messages", NotificationManager.IMPORTANCE_HIGH);
             ch.setDescription("Incoming chat message banners");
             ch.enableLights(true);
             ch.setLightColor(Color.parseColor("#00A884"));
@@ -186,53 +171,52 @@ public class QuickReplyPlugin extends Plugin {
             ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             AudioAttributes attr = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build();
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build();
             ch.setSound(defaultSound, attr);
             mgr.createNotificationChannel(ch);
         }
 
         RemoteInput remoteInput = new RemoteInput.Builder(MyFirebaseMessagingService.KEY_REPLY)
-                .setLabel("Reply")
-                .build();
+            .setLabel("Reply").build();
+
         Intent replyIntent = new Intent(ctx, ReplyReceiver.class);
+        replyIntent.setAction(MyFirebaseMessagingService.QUICK_REPLY_ACTION);
         replyIntent.putExtra("chatId", chatId);
 
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            flags |= PendingIntent.FLAG_MUTABLE;
-        }
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) flags |= PendingIntent.FLAG_MUTABLE;
         PendingIntent replyPending = PendingIntent.getBroadcast(ctx, chatId.hashCode(), replyIntent, flags);
 
         NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
-                R.drawable.ic_stat_mofie, "Reply", replyPending)
-                .addRemoteInput(remoteInput)
-                .setAllowGeneratedReplies(true)
-                .build();
+            R.drawable.ic_stat_mofie, "Reply", replyPending)
+            .addRemoteInput(remoteInput)
+            .setAllowGeneratedReplies(true)
+            .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+            .build();
 
         Intent openIntent = new Intent(ctx, MainActivity.class);
         openIntent.putExtra("chatId", chatId);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        int openFlags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
-        PendingIntent openPending = PendingIntent.getActivity(ctx, chatId.hashCode() + 1, openIntent, openFlags);
+        PendingIntent openPending = PendingIntent.getActivity(
+            ctx, chatId.hashCode() + 1, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_mofie)
-                .setColor(Color.parseColor("#00A884"))
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setSound(defaultSound)
-                .setAutoCancel(true)
-                .setContentIntent(openPending)
-                .setGroup(chatId)
-                .addAction(replyAction);
+            .setSmallIcon(R.drawable.ic_stat_mofie)
+            .setColor(Color.parseColor("#00A884"))
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setSound(defaultSound)
+            .setAutoCancel(true)
+            .setContentIntent(openPending)
+            .setGroup(chatId)
+            .addAction(replyAction);
 
         mgr.notify(chatId.hashCode(), builder.build());
         call.resolve();
