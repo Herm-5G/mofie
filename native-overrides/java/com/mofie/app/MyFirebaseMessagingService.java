@@ -32,9 +32,10 @@ import java.net.URL;
 import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-    public static final String KEY_REPLY = "key_text_reply";
-    public static final String CHANNEL_ID = "mofie_messages_high_v5";
+    public static final String KEY_REPLY   = "key_text_reply";
+    public static final String CHANNEL_ID  = "mofie_messages_high_v5";
     public static final String CALL_CHANNEL_ID = "mofie_calls_v1";
+    public static final String QUICK_REPLY_ACTION = "com.mofie.app.QUICK_REPLY";
 
     private SharedPreferences getSafePrefs() {
         Context storageCtx = this;
@@ -53,7 +54,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         Map<String, String> data = remoteMessage.getData();
-        if (data.isEmpty()) return;
+        if (data == null || data.isEmpty()) return;
 
         wakeScreen();
 
@@ -64,13 +65,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String senderPhoto = data.get("senderPhoto");
 
         if ("incoming_call".equals(kind)) {
-            showIncomingCallNotification(data);
+            // Hand off to foreground service for reliable full-screen launch
+            Intent svc = new Intent(this, CallForegroundService.class);
+            svc.putExtra("callId", data.get("callId"));
+            svc.putExtra("callerName", data.getOrDefault("callerName", title));
+            svc.putExtra("callerPhoto", data.get("callerPhoto"));
+            svc.putExtra("callType", data.getOrDefault("callType", "voice"));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(svc);
+            } else {
+                startService(svc);
+            }
         } else if ("call_ended".equals(kind)) {
             String callId = data.get("callId");
             NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (mgr != null && callId != null) {
-                mgr.cancel(callId.hashCode());
-            }
+            if (mgr != null && callId != null) mgr.cancel(callId.hashCode());
         } else {
             showQuickReplyNotification(title, body, chatId, senderPhoto);
         }
@@ -131,10 +140,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel ch = new NotificationChannel(
-                CHANNEL_ID,
-                "Chat Messages",
-                NotificationManager.IMPORTANCE_HIGH
-            );
+                CHANNEL_ID, "Chat Messages", NotificationManager.IMPORTANCE_HIGH);
             ch.setDescription("Instant chat message alerts");
             ch.enableLights(true);
             ch.setLightColor(Color.parseColor("#00A884"));
@@ -156,36 +162,31 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             .build();
 
         Intent replyIntent = new Intent(this, ReplyReceiver.class);
+        replyIntent.setAction(QUICK_REPLY_ACTION);
         replyIntent.putExtra("chatId", chatId);
 
         int replyFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            replyFlags |= PendingIntent.FLAG_MUTABLE;
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) replyFlags |= PendingIntent.FLAG_MUTABLE;
         PendingIntent replyPending = PendingIntent.getBroadcast(
-            this, chatId.hashCode(), replyIntent, replyFlags
-        );
+            this, chatId.hashCode(), replyIntent, replyFlags);
 
         NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
             R.drawable.ic_stat_mofie, "Reply", replyPending)
             .addRemoteInput(remoteInput)
             .setAllowGeneratedReplies(true)
+            .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
             .build();
 
         Intent openIntent = new Intent(this, MainActivity.class);
         openIntent.putExtra("chatId", chatId);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        int openFlags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
         PendingIntent openPending = PendingIntent.getActivity(
-            this, chatId.hashCode() + 1, openIntent, openFlags
-        );
+            this, chatId.hashCode() + 1, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Bitmap avatar = downloadCircularBitmap(senderPhotoUrl);
         Person.Builder senderBuilder = new Person.Builder().setName(title);
-        if (avatar != null) {
-            senderBuilder.setIcon(IconCompat.createWithBitmap(avatar));
-        }
+        if (avatar != null) senderBuilder.setIcon(IconCompat.createWithBitmap(avatar));
         Person sender = senderBuilder.build();
 
         NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(sender)
@@ -194,93 +195,24 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_mofie)
             .setColor(Color.parseColor("#00A884"))
-            .setContentTitle(title)
-            .setContentText(body)
             .setStyle(style)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setSound(defaultSound)
             .setAutoCancel(true)
             .setContentIntent(openPending)
+            .setShortcutId(chatId)                         // Enables Android Bubbles
+            .setShortcutInfo(new androidx.core.content.pm.ShortcutInfoCompat.Builder(this, chatId)
+                .setShortLabel(title)
+                .setLongLabel(title)
+                .setIcon(avatar != null ? IconCompat.createWithBitmap(avatar)
+                                        : IconCompat.createWithResource(this, R.drawable.ic_stat_mofie))
+                .setIntent(openIntent)
+                .build())
             .addAction(replyAction);
 
-        if (avatar != null) {
-            builder.setLargeIcon(avatar);
-        }
-
+        if (avatar != null) builder.setLargeIcon(avatar);
         mgr.notify(chatId.hashCode(), builder.build());
     }
-
-    private void showIncomingCallNotification(Map<String, String> data) {
-        String callId = data.get("callId");
-        String callerName = data.getOrDefault("callerName", "Incoming Call");
-        String callType = data.getOrDefault("callType", "voice");
-        if (callId == null) return;
-
-        NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (mgr == null) return;
-
-        Uri ringtoneUri = Settings.System.DEFAULT_RINGTONE_URI;
-
-        // Dedicated Ringtone Channel using system default ringtone
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel callCh = new NotificationChannel(
-                CALL_CHANNEL_ID,
-                "Incoming Calls",
-                NotificationManager.IMPORTANCE_HIGH
-            );
-            callCh.setDescription("Incoming voice and video calls");
-            callCh.enableLights(true);
-            callCh.setLightColor(Color.parseColor("#00A884"));
-            callCh.enableVibration(true);
-            callCh.setVibrationPattern(new long[]{0, 1000, 1000});
-            callCh.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-
-            AudioAttributes ringAttr = new AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-.setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-.build();
-callCh.setSound(ringtoneUri, ringAttr);
-mgr.createNotificationChannel(callCh);
-}
-Intent fullScreenIntent = new Intent(this, MainActivity.class);
-fullScreenIntent.putExtra("incomingCallId", callId);
-fullScreenIntent.addFlags(
-Intent.FLAG_ACTIVITY_NEW_TASK |
-Intent.FLAG_ACTIVITY_CLEAR_TOP |
-Intent.FLAG_ACTIVITY_SINGLE_TOP
-);
-PendingIntent fullScreenPending = PendingIntent.getActivity(
-this, callId.hashCode(), fullScreenIntent,
-PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-);
-String subtitle = "video".equals(callType)
-? "Incoming Mofie video call..."
-: "Incoming Mofie voice call...";
-NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CALL_CHANNEL_ID)
-.setSmallIcon(R.drawable.ic_stat_mofie)
-.setColor(Color.parseColor("#00A884"))
-.setContentTitle(callerName)
-.setContentText(subtitle)
-.setPriority(NotificationCompat.PRIORITY_MAX)
-.setCategory(NotificationCompat.CATEGORY_CALL)
-.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-.setSound(ringtoneUri)
-.setVibrate(new long[]{0, 1000, 1000})
-.setFullScreenIntent(fullScreenPending, true)
-.setContentIntent(fullScreenPending)
-.setOngoing(true)
-.setTimeoutAfter(45000)
-.setAutoCancel(true);
-Notification notif = builder.build();
-// Loops the system default ringtone continuously until answered or cancelled
-notif.flags |= Notification.FLAG_INSISTENT;
-mgr.notify(callId.hashCode(), notif);
-// Immediately bring MainActivity to foreground on screen
-try {
-startActivity(fullScreenIntent);
-} catch (Exception ignored) {}
-}
 }
