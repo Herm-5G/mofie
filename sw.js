@@ -18,7 +18,7 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-const DEFAULT_ICON = "https://res.cloudinary.com/rirfqxoz/image/upload/IMG-20261022-WA0000.jpg";
+const DEFAULT_ICON = "https://res.cloudinary.com/rirfqxoz/image/upload/icon.jpg";
 
 // ── Background message handler ─────────────────────────────────────────
 // FCM calls this ONLY for data-only messages (no `notification` object).
