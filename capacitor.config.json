@@ -12,18 +12,14 @@
   },
   "android": {
     "allowMixedContent": false,
-    "webContentsDebuggingEnabled": false
+    "webContentsDebuggingEnabled": true
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 100,
+      "launchShowDuration": 0,
       "launchAutoHide": true,
       "backgroundColor": "#000000",
-      "androidSplashResourceName": "splash_centered",
-      "androidScaleType": "CENTER",
-      "showSpinner": false,
-      "splashFullScreen": true,
-      "splashImmersive": true
+      "showSpinner": false
     },
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"],
