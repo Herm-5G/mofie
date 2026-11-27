@@ -15,7 +15,8 @@
     <meta property="og:url" content="https://herm-5g.github.io/mofie/">
     <meta property="og:title" content="Mofie — Pure, Fast, Convenient">
     <meta property="og:description" content="Mofie is a fast, private messaging app with disappearing messages, status updates, and crystal-clear end-to-end encryption.">
-    <meta property="og:image" content="./Logo.jpg">
+    <!-- FIXED: Changed to relative path and lowercase -->
+    <meta property="og:image" content="./logo.jpg">
     <meta property="og:image:width" content="1080">
     <meta property="og:image:height" content="1080">
     <meta property="og:site_name" content="Mofie">
@@ -24,11 +25,13 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Mofie — Pure, Fast, Convenient">
     <meta name="twitter:description" content="Mofie is a fast, private messaging app with disappearing messages, status updates, and crystal-clear end-to-end encryption.">
-    <meta name="twitter:image" content="./Logo.jpg">
+    <!-- FIXED: Changed to relative path and lowercase -->
+    <meta name="twitter:image" content="./logo.jpg">
 
     <!-- Favicons & Manifest -->
+    <!-- FIXED: Changed to relative paths and lowercase -->
     <link rel="icon" type="image/jpeg" href="./icon.png">
-    <link rel="apple-touch-icon" href="./Logo.jpg">
+    <link rel="apple-touch-icon" href="./logo.jpg">
     <link rel="manifest" href="./manifest.json">
 
     <!-- Performance: Preconnect -->
@@ -38,7 +41,8 @@
     <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com">
 
     <!-- Preload the critical JS and Splash Image -->
-    <link rel="preload" href="./Logo.jpg" as="image" fetchpriority="high">
+    <!-- FIXED: Changed to relative path and lowercase -->
+    <link rel="preload" href="./logo.jpg" as="image" fetchpriority="high">
     <link rel="modulepreload" href="app.js" fetchpriority="high">
     <link rel="modulepreload" href="data-saver-patch.js">
     <link rel="modulepreload" href="patches.js">
@@ -83,8 +87,8 @@
 <body>
     <!-- Custom Logo Splash Screen -->
     <div id="splash-screen" aria-hidden="true">
-        <!-- FIXED: Using ./ and correct capitalization -->
-        <img src="./Logo.jpg" alt="Mofie Logo" class="splash-logo" fetchpriority="high">
+        <!-- FIXED: Changed to relative path and lowercase -->
+        <img src="./logo.jpg" alt="Mofie Logo" class="splash-logo" fetchpriority="high">
     </div>
 
     <!-- MAIN APP CONTAINER -->
@@ -126,7 +130,8 @@
         // LIGHTNING FAST: Register Service Worker for Instant Repeat Visits
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/mofie/sw.js')
+                // FIXED: Changed to relative path for Capacitor compatibility
+                navigator.serviceWorker.register('./sw.js')
                     .then(reg => console.log('Service Worker Registered! App will now load instantly next time.'))
                     .catch(err => console.log('Service Worker failed: ', err));
             });
