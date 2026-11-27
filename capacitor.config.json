@@ -12,11 +12,11 @@
   },
   "android": {
     "allowMixedContent": false,
-    "webContentsDebuggingEnabled": true
+    "webContentsDebuggingEnabled": false
   },
   "plugins": {
-            "SplashScreen": {
-      "launchShowDuration": 1500,
+    "SplashScreen": {
+      "launchShowDuration": 100,
       "launchAutoHide": true,
       "backgroundColor": "#000000",
       "androidSplashResourceName": "splash_centered",
