@@ -15,7 +15,7 @@
     <meta property="og:url" content="https://herm-5g.github.io/mofie/">
     <meta property="og:title" content="Mofie — Pure, Fast, Convenient">
     <meta property="og:description" content="Mofie is a fast, private messaging app with disappearing messages, status updates, and crystal-clear end-to-end encryption.">
-    <meta property="og:image" content="https://herm-5g.github.io/mofie/logo.jpg">
+    <meta property="og:image" content="./Logo.jpg">
     <meta property="og:image:width" content="1080">
     <meta property="og:image:height" content="1080">
     <meta property="og:site_name" content="Mofie">
@@ -24,12 +24,12 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Mofie — Pure, Fast, Convenient">
     <meta name="twitter:description" content="Mofie is a fast, private messaging app with disappearing messages, status updates, and crystal-clear end-to-end encryption.">
-    <meta name="twitter:image" content="https://herm-5g.github.io/mofie/logo.jpg">
+    <meta name="twitter:image" content="./Logo.jpg">
 
     <!-- Favicons & Manifest -->
-    <link rel="icon" type="image/jpeg" href="/mofie/icon.jpg">
-    <link rel="apple-touch-icon" href="/mofie/logo.jpg">
-    <link rel="manifest" href="/mofie/manifest.json">
+    <link rel="icon" type="image/jpeg" href="./icon.png">
+    <link rel="apple-touch-icon" href="./Logo.jpg">
+    <link rel="manifest" href="./manifest.json">
 
     <!-- Performance: Preconnect -->
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -37,11 +37,8 @@
     <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com">
 
-    <!-- 
-      LIGHTNING FAST: Preload the critical JS and Splash Image 
-      fetchpriority="high" tells the browser "Download this before anything else"
-    -->
-    <link rel="preload" href="/mofie/logo.jpg" as="image" fetchpriority="high">
+    <!-- Preload the critical JS and Splash Image -->
+    <link rel="preload" href="./Logo.jpg" as="image" fetchpriority="high">
     <link rel="modulepreload" href="app.js" fetchpriority="high">
     <link rel="modulepreload" href="data-saver-patch.js">
     <link rel="modulepreload" href="patches.js">
@@ -69,7 +66,7 @@
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 999999;
-            transition: opacity 0.2s ease; /* Fades out faster now */
+            transition: opacity 0.2s ease; 
         }
         #splash-screen.hide-splash { 
             opacity: 0; 
@@ -79,7 +76,6 @@
             width: 140px;
             height: auto;
             object-fit: contain;
-            /* Prevent layout shift while image loads */
             aspect-ratio: 1 / 1; 
         }
     </style>
@@ -87,8 +83,8 @@
 <body>
     <!-- Custom Logo Splash Screen -->
     <div id="splash-screen" aria-hidden="true">
-        <!-- Note: Make sure this image is compressed! See instructions below. -->
-        <img src="/mofie/logo.jpg" alt="Mofie Logo" class="splash-logo" fetchpriority="high">
+        <!-- FIXED: Using ./ and correct capitalization -->
+        <img src="./Logo.jpg" alt="Mofie Logo" class="splash-logo" fetchpriority="high">
     </div>
 
     <!-- MAIN APP CONTAINER -->
@@ -108,7 +104,7 @@
 
             const hide = () => {
                 splash.classList.add('hide-splash');
-                setTimeout(() => splash.remove(), 200); // Removes from DOM faster
+                setTimeout(() => splash.remove(), 200); 
             };
 
             if (appDiv.children.length > 0) { hide(); return; }
@@ -121,7 +117,6 @@
             });
             obs.observe(appDiv, { childList: true });
 
-            // Failsafe: Reduced to 4 seconds for a snappier feel
             setTimeout(() => {
                 obs.disconnect();
                 if (document.body.contains(splash)) hide();
