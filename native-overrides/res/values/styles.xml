@@ -13,9 +13,9 @@
         <item name="android:windowBackground">#000000</item>
     </style>
 
-    <!-- This connects the launch theme to your custom centered splash -->
+    <!-- CHANGED: Now uses solid black instead of @drawable/splash_centered -->
     <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
-        <item name="android:windowBackground">@drawable/splash_centered</item>
+        <item name="android:windowBackground">#000000</item>
     </style>
 
 </resources>
